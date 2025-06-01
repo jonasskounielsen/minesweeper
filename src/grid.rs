@@ -18,6 +18,10 @@ impl Grid {
     pub fn get(&mut self, place: Place) -> Option<&mut Cell> {
         self.tile.get(place)
     }
+
+    pub fn generate(&mut self, place: Place) {
+        
+    }
 }
 
 #[derive(Clone, Copy)]

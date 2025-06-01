@@ -1,6 +1,10 @@
 pub mod cell;
 pub mod grid;
 
+use grid::{Grid, Input};
+
 fn main() {
-    println!("Hello, world!");
+    let grid = Grid::new(Input {});
+
+    
 }

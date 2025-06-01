@@ -36,12 +36,7 @@ impl Tile {
 
 impl Subtiles {
     pub fn get(&mut self, place: Place) -> Option<&mut Cell> {
-        let subtile = match self.quadrant(place) {
-            Quadrant::TopLeft     => &mut self.top_left,
-            Quadrant::TopRight    => &mut self.top_right,
-            Quadrant::BottomLeft  => &mut self.bottom_left,
-            Quadrant::BottomRight => &mut self.bottom_right,
-        };
+        let subtile = self.get_quadrant(place);
 
         match subtile {
             None => None,
@@ -49,6 +44,23 @@ impl Subtiles {
                 match &mut **boxed {
                     Tile::Cell(cell) => Some(cell),
                     Tile::Subtiles(subtile) => subtile.get(place),
+                }
+            }
+        }
+    }
+
+    pub fn generate(&mut self, place: Place) -> Result<(), &'static str> {
+        let quadrant = self.quadrant(place);
+        let subtile = self.return_quadrant(quadrant);
+
+        match subtile {
+            None => {
+                 
+            },
+            Some(boxed) => {
+                match &mut **boxed {
+                    Tile::Cell(cell) => Err("cell already exists"),
+                    Tile::Subtiles(subtile) => subtile.generate(place),
                 }
             }
         }
@@ -70,7 +82,7 @@ impl Subtiles {
         self.origin.y + self.radius
     }
 
-    pub fn quadrant(&self, place: Place) -> Quadrant {
+    fn quadrant(&self, place: Place) -> Quadrant {
         let Place { x, y } = place;
 
         if        self.left()   < x && x < self.origin.x && self.origin.y < y && y < self.top() {
@@ -83,6 +95,28 @@ impl Subtiles {
             Quadrant::BottomRight
         } else {
             panic!("invalid place");
+        }
+    }
+
+    fn return_quadrant(&mut self, quadrant: Quadrant) -> &mut Option<Box<Tile>> {
+        match quadrant {
+            Quadrant::TopLeft     => &mut self.top_left,
+            Quadrant::TopRight    => &mut self.top_right,
+            Quadrant::BottomLeft  => &mut self.bottom_left,
+            Quadrant::BottomRight => &mut self.bottom_right,
+        }
+    }
+
+    fn get_quadrant(&mut self, place: Place) -> &mut Option<Box<Tile>> {
+        self.return_quadrant(self.quadrant(place))
+    }
+
+    fn make_quadrant(&mut self, quadrant: Quadrant) {
+        match quadrant {
+            Quadrant::TopLeft     => { self.top_left =  },
+            Quadrant::TopRight    => &mut self.top_right,
+            Quadrant::BottomLeft  => &mut self.bottom_left,
+            Quadrant::BottomRight => &mut self.bottom_right,
         }
     }
 }
