@@ -11,15 +11,15 @@ pub enum Tile {
 
 #[derive(Debug)]
 pub struct Subtiles {
-    radius: i32,
-    origin: Place,
-    top_left:     Tile,
-    top_right:    Tile,
-    bottom_left:  Tile,
-    bottom_right: Tile,
+    pub radius: i32,
+    pub origin: Place,
+    pub top_left:     Tile,
+    pub top_right:    Tile,
+    pub bottom_left:  Tile,
+    pub bottom_right: Tile,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Quadrant {
     TopLeft,
     TopRight,
@@ -28,19 +28,38 @@ pub enum Quadrant {
 }
 
 impl Tile {
-    pub fn new() -> Subtiles {
+    pub fn new(radius: i32) -> Subtiles {
         Subtiles {
             origin: Place::ORIGIN,
-            radius: 1,
+            radius,
             top_left:     Tile::None,
             top_right:    Tile::None,
             bottom_left:  Tile::None,
             bottom_right: Tile::None,
         }
     }
+
+    pub fn or_none(self) -> Tile {
+        match self {
+            Tile::Subtiles(tile) => match *tile {
+                Subtiles { top_left: Tile::None, top_right: Tile::None, bottom_left: Tile::None, bottom_right: Tile::None, .. } => Tile::None,
+                tile => Tile::Subtiles(Box::new(tile)),
+            },
+            tile => tile,
+        }
+    }
 }
 
 impl Subtiles {
+    pub const DUMMY: Subtiles = Subtiles {
+        origin: Place::ORIGIN,
+        radius: 1,
+        top_left:     Tile::None,
+        top_right:    Tile::None,
+        bottom_left:  Tile::None,
+        bottom_right: Tile::None,
+    };
+
     pub fn get(&mut self, place: Place) -> Result<Option<&mut Cell>, &'static str> {
         let subtile = self.subtile(self.quadrant(place)?);
 
@@ -61,7 +80,7 @@ impl Subtiles {
                     self.make_cell(quadrant)
                 } else {
                     self.make_tile(quadrant)?;
-                    if let Tile::Subtiles(subtile) = self.subtile(quadrant) {
+                    if let Tile::Subtiles(subtile) = dbg!(self).subtile(quadrant) {
                         subtile.generate(place)
                     } else {
                         unreachable!(); // we just made a subtile there
@@ -76,8 +95,6 @@ impl Subtiles {
     fn quadrant(&self, place: Place) -> Result<Quadrant, &'static str> {
         let Place { x, y } = place;
 
-        dbg!(self.left());
-
         if        self.left()   <= x && x < self.origin.x && self.origin.y <= y && y < self.top() {
             Ok(Quadrant::TopLeft)
         } else if self.origin.x <= x && x < self.right() &&  self.origin.y <= y && y < self.top() {
@@ -87,6 +104,7 @@ impl Subtiles {
         } else if self.origin.x <= x && x < self.right() &&  self.bottom() <= y && y < self.origin.y {
             Ok(Quadrant::BottomRight)
         } else {
+            dbg!(&place, &self.origin);
             Err("invalid place")
         }
     }
@@ -110,16 +128,17 @@ impl Subtiles {
         let new_tile = Subtiles {
             radius: self.radius / 2,
             origin: match quadrant {
-                Quadrant::TopLeft     => Place { x: self.origin.x - self.radius / 2, y: self.origin.x + self.radius / 2 },
-                Quadrant::TopRight    => Place { x: self.origin.x + self.radius / 2, y: self.origin.x + self.radius / 2 },
-                Quadrant::BottomLeft  => Place { x: self.origin.x - self.radius / 2, y: self.origin.x - self.radius / 2 },
-                Quadrant::BottomRight => Place { x: self.origin.x + self.radius / 2, y: self.origin.x - self.radius / 2 },
+                Quadrant::TopLeft     => Place { x: self.origin.x - self.radius / 2, y: self.origin.y + self.radius / 2 },
+                Quadrant::TopRight    => Place { x: self.origin.x + self.radius / 2, y: self.origin.y + self.radius / 2 },
+                Quadrant::BottomLeft  => Place { x: self.origin.x - self.radius / 2, y: self.origin.y - self.radius / 2 },
+                Quadrant::BottomRight => Place { x: self.origin.x + self.radius / 2, y: self.origin.y - self.radius / 2 },
             },
             top_left:     Tile::None,
             top_right:    Tile::None,
             bottom_left:  Tile::None,
             bottom_right: Tile::None,
         };
+        dbg!(&quadrant, &self, &new_tile);
         match quadrant {
             Quadrant::TopLeft     => self.top_left     = Tile::Subtiles(Box::new(new_tile)),
             Quadrant::TopRight    => self.top_right    = Tile::Subtiles(Box::new(new_tile)),

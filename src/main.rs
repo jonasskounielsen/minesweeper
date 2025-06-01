@@ -6,9 +6,9 @@ use grid::{Grid, Input, Place};
 fn main() {
     let mut grid = Grid::new(Input {});
 
-    dbg!(&grid);
-
-    dbg!(grid.generate(Place { x: 0, y: 0 }));
+    dbg!(grid.generate(Place { x: 1, y: 4 }));
+    dbg!(grid.generate(Place { x: -3, y: 1 }));
+    dbg!(grid.generate(Place { x: 10, y: -5 }));
 
     dbg!(&grid);
 }

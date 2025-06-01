@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Cell {
     value: CellValue,
     revealed: bool,
@@ -14,7 +14,7 @@ impl Cell {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum CellValue {
     Mine,
     Empty,
