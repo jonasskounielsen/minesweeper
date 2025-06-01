@@ -80,7 +80,7 @@ impl Subtiles {
                     self.make_cell(quadrant)
                 } else {
                     self.make_tile(quadrant)?;
-                    if let Tile::Subtiles(subtile) = dbg!(self).subtile(quadrant) {
+                    if let Tile::Subtiles(subtile) = self.subtile(quadrant) {
                         subtile.generate(place)
                     } else {
                         unreachable!(); // we just made a subtile there
@@ -104,7 +104,6 @@ impl Subtiles {
         } else if self.origin.x <= x && x < self.right() &&  self.bottom() <= y && y < self.origin.y {
             Ok(Quadrant::BottomRight)
         } else {
-            dbg!(&place, &self.origin);
             Err("invalid place")
         }
     }
@@ -138,7 +137,6 @@ impl Subtiles {
             bottom_left:  Tile::None,
             bottom_right: Tile::None,
         };
-        dbg!(&quadrant, &self, &new_tile);
         match quadrant {
             Quadrant::TopLeft     => self.top_left     = Tile::Subtiles(Box::new(new_tile)),
             Quadrant::TopRight    => self.top_right    = Tile::Subtiles(Box::new(new_tile)),
