@@ -1,5 +1,4 @@
 use super::cell::CellValue;
-
 use super::{Cell, Place};
 
 #[derive(Debug)]
