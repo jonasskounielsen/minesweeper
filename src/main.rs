@@ -1,5 +1,5 @@
-pub mod cell;
 pub mod grid;
+pub mod view;
 
 use grid::{Grid, Input, Place};
 

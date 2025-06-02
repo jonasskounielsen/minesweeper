@@ -1,6 +1,7 @@
-use super::cell::Cell;
+use self::cell::Cell;
 use self::tile::{Tile, Subtiles};
 
+pub mod cell;
 mod tile;
 
 #[derive(Debug)]
