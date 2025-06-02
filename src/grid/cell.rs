@@ -1,7 +1,7 @@
 #[derive(Clone, Copy, Debug)]
 pub struct Cell {
-    value: CellValue,
-    revealed: bool,
+    pub value: CellValue,
+    pub revealed: bool,
 }
 
 impl Cell {

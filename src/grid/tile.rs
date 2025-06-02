@@ -59,7 +59,7 @@ impl Subtiles {
         bottom_right: Tile::None,
     };
 
-    pub fn get(&mut self, place: Place) -> Result<Option<&mut Cell>, &'static str> {
+    pub fn get(&self, place: Place) -> Result<Option<&Cell>, &'static str> {
         let subtile = self.subtile(self.quadrant(place)?);
 
         match subtile {
@@ -68,10 +68,20 @@ impl Subtiles {
             Tile::Subtiles(subtile) => subtile.get(place),
         }
     }
+    
+    pub fn get_mut(&mut self, place: Place) -> Result<Option<&mut Cell>, &'static str> {
+        let subtile = self.subtile_mut(self.quadrant(place)?);
+
+        match subtile {
+            Tile::None => Ok(None),
+            Tile::Cell(cell) => Ok(Some(cell)),
+            Tile::Subtiles(subtile) => subtile.get_mut(place),
+        }
+    }
 
     pub fn generate(&mut self, place: Place) -> Result<(), &'static str> {
         let quadrant = self.quadrant(place)?;
-        let subtile = self.subtile(quadrant);
+        let subtile = self.subtile_mut(quadrant);
 
         match subtile {
             Tile::None => {
@@ -79,7 +89,7 @@ impl Subtiles {
                     self.make_cell(quadrant)
                 } else {
                     self.make_tile(quadrant)?;
-                    if let Tile::Subtiles(subtile) = self.subtile(quadrant) {
+                    if let Tile::Subtiles(subtile) = self.subtile_mut(quadrant) {
                         subtile.generate(place)
                     } else {
                         unreachable!(); // we just made a subtile there
@@ -107,7 +117,16 @@ impl Subtiles {
         }
     }
 
-    fn subtile(&mut self, quadrant: Quadrant) -> &mut Tile {
+    fn subtile(&self, quadrant: Quadrant) -> &Tile {
+        match quadrant {
+            Quadrant::TopLeft     => &self.top_left,
+            Quadrant::TopRight    => &self.top_right,
+            Quadrant::BottomLeft  => &self.bottom_left,
+            Quadrant::BottomRight => &self.bottom_right,
+        }
+    }
+
+    fn subtile_mut(&mut self, quadrant: Quadrant) -> &mut Tile {
         match quadrant {
             Quadrant::TopLeft     => &mut self.top_left,
             Quadrant::TopRight    => &mut self.top_right,
@@ -120,7 +139,7 @@ impl Subtiles {
         if self.radius == 1 {
             return Err("tile too small for subtiles");
         }
-        if !matches!(self.subtile(quadrant), Tile::None) {
+        if !matches!(self.subtile_mut(quadrant), Tile::None) {
             return Err("quadrant not empty");
         }
         let new_tile = Subtiles {
@@ -149,7 +168,7 @@ impl Subtiles {
         if self.radius != 1 {
             return Err("tile too large");
         }
-        if !matches!(self.subtile(quadrant), Tile::None) {
+        if !matches!(self.subtile_mut(quadrant), Tile::None) {
             return Err("quadrant not empty");
         }
         let cell = Cell::new(CellValue::Empty);

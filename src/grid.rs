@@ -17,8 +17,20 @@ impl Grid {
         }
     }
 
-    pub fn get(&mut self, place: Place) -> Result<Option<&mut Cell>, &'static str> {
-        self.tile.get(place)
+    pub fn get(&self, place: Place) -> Option<&Cell> {
+        if place.radius() > self.tile.radius {
+            return None;
+        }
+        self.tile.get(place).unwrap()
+        // we already checked for out of bounds
+    }
+
+    fn get_mut(&mut self, place: Place) -> Option<&mut Cell> {
+        if place.radius() > self.tile.radius {
+            return None;
+        }
+        self.tile.get_mut(place).unwrap()
+        // we already checked for out of bounds
     }
 
     pub fn generate(&mut self, place: Place) -> Result<(), &'static str> {
@@ -27,6 +39,17 @@ impl Grid {
             self.generate(place)
         } else {
             self.tile.generate(place)
+        }
+    }
+
+    pub fn reveal(&mut self, place: Place) {
+        match self.get_mut(place) {
+            Some(cell) => cell.reveal(),
+            None => {
+                self.generate(place).unwrap();
+                // we already checked if the cell exists
+                self.reveal(place);
+            },
         }
     }
 
@@ -86,10 +109,11 @@ pub struct Place {
 impl Place {
     const ORIGIN: Place = Place { x: 0, y: 0 };
 
+    /// Radius of the smallest tile containing the place.
     pub fn radius(&self) -> i32 {
         std::cmp::max(
-            if self.x >= 0 { self.x + 1 } else { self.x },
-            if self.y >= 0 { self.y + 1 } else { self.y },
+            if self.x >= 0 { self.x + 1 } else { self.x.abs() },
+            if self.y >= 0 { self.y + 1 } else { self.y.abs() },
         )
     }
 }
