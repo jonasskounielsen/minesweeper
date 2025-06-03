@@ -7,51 +7,36 @@ mod tile;
 #[derive(Debug)]
 pub struct Grid {
     tile: Subtiles,
-    // mine_concentration: f32,
+    mine_concentration: f32,
 }
 
 impl Grid {
-    pub fn new(_input: Input) -> Grid {
+    pub fn new(mine_concentration: f32) -> Grid {
         Self {
-            tile: Tile::new(1),
+            tile: Tile::new(1, |_| Cell::new(CellValue::Mine)),
+            mine_concentration,
         }
     }
 
     pub fn get(&self, place: Place) -> Option<&Cell> {
         if place.radius() > self.tile.radius {
-            return None;
+            None
+        } else {
+            self.tile.get(place)
         }
-        self.tile.get(place).unwrap()
         // we already checked for out of bounds
     }
 
-    fn get_mut(&mut self, place: Place) -> Option<&mut Cell> {
-        if place.radius() > self.tile.radius {
-            return None;
-        }
-        self.tile.get_mut(place).unwrap()
-        // we already checked for out of bounds
-    }
-
-    pub fn generate(&mut self, place: Place) -> Result<(), &'static str> {
+    pub fn get_mut(&mut self, place: Place) -> &mut Cell {
         if place.radius() > self.tile.radius {
             self.expand();
-            self.generate(place)
-        } else {
-            let cell = Cell::new(CellValue::Empty);
-            self.tile.add(cell, place)
+            self.get_mut(place);
         }
-    }
-
-    pub fn reveal(&mut self, place: Place) {
-        match self.get_mut(place) {
-            Some(cell) => cell.reveal(),
-            None => {
-                self.generate(place).unwrap();
-                // we already checked if the cell exists
-                self.reveal(place);
-            },
+        if let None = self.tile.get(place) {
+            
         }
+        self.tile.get_mut(place)
+        // we already checked for out of bounds
     }
 
     fn expand(&mut self) {
@@ -65,6 +50,7 @@ impl Grid {
         self.tile = Subtiles {
             radius: old_radius * 2,
             origin: Place::ORIGIN,
+            builder: old_tile.builder,
             top_left: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
                 origin: Place { x: old_left, y: old_top },
@@ -72,6 +58,7 @@ impl Grid {
                 top_right:    Tile::None,
                 bottom_left:  Tile::None,
                 bottom_right: old_tile.top_left.or_none(),
+                builder: old_tile.builder,
             })),
             top_right: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
@@ -80,6 +67,7 @@ impl Grid {
                 top_right:    Tile::None,
                 bottom_left:  old_tile.top_right.or_none(),
                 bottom_right: Tile::None,
+                builder: old_tile.builder,
             })),
             bottom_left: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
@@ -88,6 +76,7 @@ impl Grid {
                 top_right:    old_tile.bottom_left.or_none(),
                 bottom_left:  Tile::None,
                 bottom_right: Tile::None,
+                builder: old_tile.builder,
             })),
             bottom_right: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
@@ -96,6 +85,7 @@ impl Grid {
                 top_right:    Tile::None,
                 bottom_left:  Tile::None,
                 bottom_right: Tile::None,
+                builder: old_tile.builder,
             })),
         };
     }
@@ -117,8 +107,4 @@ impl Place {
             if self.y >= 0 { self.y + 1 } else { self.y.abs() },
         )
     }
-}
-
-pub struct Input {
-    // mine_concentration: f32,
 }

@@ -2,24 +2,24 @@ pub mod grid;
 pub mod view;
 pub mod game;
 
-use grid::{Grid, Input, Place};
+use grid::{Grid, Place};
 use view::View;
 
 fn main() {
-    let mut grid = Grid::new(Input {});
+    let mut grid = Grid::new(0.3f32);
 
-    grid.generate(Place { x: 2, y: 6 }).unwrap();
-    grid.generate(Place { x: 3, y: -4 }).unwrap();
-    grid.generate(Place { x: -3, y: -6 }).unwrap();
-    grid.generate(Place { x: -2, y: 1 }).unwrap();
+    grid.get_mut(Place { x: 2, y: 6 });
+    grid.get_mut(Place { x: 3, y: -4 });
+    grid.get_mut(Place { x: -3, y: -6 });
+    grid.get_mut(Place { x: -2, y: 1 });
 
     grid.get(Place { x: 2, y: 6 });
     grid.get(Place { x: 3, y: -4 });
     grid.get(Place { x: -3, y: -6 });
     grid.get(Place { x: -2, y: 1 });
     
-    grid.reveal(Place { x: 3, y: -4 });
-    grid.reveal(Place { x: -3, y: -6 });
+    grid.get_mut(Place { x: 3, y: -4 }).reveal();
+    grid.get_mut(Place { x: -3, y: -6 }).reveal();
 
     let view = View::new(
         &grid, 16, 16,

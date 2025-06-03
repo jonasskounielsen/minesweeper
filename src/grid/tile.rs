@@ -15,6 +15,7 @@ pub struct Subtiles {
     pub top_right:    Tile,
     pub bottom_left:  Tile,
     pub bottom_right: Tile,
+    pub builder: fn(Place) -> Cell,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -26,7 +27,7 @@ pub enum Quadrant {
 }
 
 impl Tile {
-    pub fn new(radius: i32) -> Subtiles {
+    pub fn new(radius: i32, builder: fn(Place) -> Cell) -> Subtiles {
         Subtiles {
             origin: Place::ORIGIN,
             radius,
@@ -34,6 +35,7 @@ impl Tile {
             top_right:    Tile::None,
             bottom_left:  Tile::None,
             bottom_right: Tile::None,
+            builder,
         }
     }
 
@@ -56,63 +58,87 @@ impl Subtiles {
         top_right:    Tile::None,
         bottom_left:  Tile::None,
         bottom_right: Tile::None,
+        builder: |_| unimplemented!("dummy struct"),
     };
 
-    pub fn get(&self, place: Place) -> Result<Option<&Cell>, &'static str> {
-        let subtile = self.subtile(self.quadrant(place)?);
+    pub fn get(&self, place: Place) -> Option<&Cell> {
+        let subtile = self.subtile(self.quadrant(place));
 
         match subtile {
-            Tile::None => Ok(None),
-            Tile::Cell(cell) => Ok(Some(cell)),
+            Tile::None => None,
+            Tile::Cell(cell) => Some(&cell),
             Tile::Subtiles(subtile) => subtile.get(place),
         }
     }
     
-    pub fn get_mut(&mut self, place: Place) -> Result<Option<&mut Cell>, &'static str> {
-        let subtile = self.subtile_mut(self.quadrant(place)?);
+    pub fn get_mut(&mut self, place: Place) -> &mut Cell {
+        let quadrant = self.quadrant(place);
+        let tile = std::mem::replace(self.subtile_mut(quadrant), Tile::None);
 
-        match subtile {
-            Tile::None => Ok(None),
-            Tile::Cell(cell) => Ok(Some(cell)),
-            Tile::Subtiles(subtile) => subtile.get_mut(place),
+        match tile {
+            Tile::None => {
+                self.add(place);
+                self.get_mut(place)
+            },
+            Tile::Cell(cell) => {
+                *self.subtile_mut(quadrant) = Tile::Cell(cell);
+                match self.subtile_mut(quadrant) {
+                    Tile::Cell(cell) => cell,
+                    _ => unreachable!(), // we just set this tile to a cell
+                }
+            },
+            Tile::Subtiles(subtile) => {
+                *self.subtile_mut(quadrant) = Tile::Subtiles(subtile);
+                match self.subtile_mut(quadrant) {
+                    Tile::Subtiles(subtile) => subtile.get_mut(place),
+                    _ => unreachable!(), // we just set this tile to subtiles
+                }
+            },
         }
+        
     }
 
-    pub fn add(&mut self, cell: Cell, place: Place) -> Result<(), &'static str> {
-        let quadrant = self.quadrant(place)?;
+    fn add(&mut self, place: Place) {
+        let quadrant = self.quadrant(place);
         let subtile = self.subtile_mut(quadrant);
 
         match subtile {
             Tile::None => {
                 if self.radius == 1 {
-                    self.add_cell(cell, quadrant)
+                    let cell = (self.builder)(place);
+                    match quadrant {
+                        Quadrant::TopLeft     => self.top_left     = Tile::Cell(cell),
+                        Quadrant::TopRight    => self.top_right    = Tile::Cell(cell),
+                        Quadrant::BottomLeft  => self.bottom_left  = Tile::Cell(cell),
+                        Quadrant::BottomRight => self.bottom_right = Tile::Cell(cell),
+                    };
                 } else {
-                    self.make_tile(quadrant)?;
+                    self.make_tile(quadrant);
                     if let Tile::Subtiles(subtile) = self.subtile_mut(quadrant) {
-                        subtile.add(cell, place)
+                        subtile.add(place)
                     } else {
                         unreachable!(); // we just made a subtile there
                     }
                 }
             },
-            Tile::Cell(_) => Err("cell already exists"),
-            Tile::Subtiles(subtile) => subtile.add(cell, place),
+            Tile::Cell(_) => panic!("cell already exists"),
+            Tile::Subtiles(subtile) => subtile.add(place),
         }
     }
 
-    fn quadrant(&self, place: Place) -> Result<Quadrant, &'static str> {
+    fn quadrant(&self, place: Place) -> Quadrant {
         let Place { x, y } = place;
 
         if        self.left()   <= x && x < self.origin.x && self.origin.y <= y && y < self.top() {
-            Ok(Quadrant::TopLeft)
+            Quadrant::TopLeft
         } else if self.origin.x <= x && x < self.right() &&  self.origin.y <= y && y < self.top() {
-            Ok(Quadrant::TopRight)
+            Quadrant::TopRight
         } else if self.left()   <= x && x < self.origin.x && self.bottom() <= y && y < self.origin.y {
-            Ok(Quadrant::BottomLeft)
+            Quadrant::BottomLeft
         } else if self.origin.x <= x && x < self.right() &&  self.bottom() <= y && y < self.origin.y {
-            Ok(Quadrant::BottomRight)
+            Quadrant::BottomRight
         } else {
-            Err("invalid place")
+            panic!("invalid place");
         }
     }
 
@@ -134,12 +160,12 @@ impl Subtiles {
         }
     }
 
-    fn make_tile(&mut self, quadrant: Quadrant) -> Result<(), &'static str> {
+    fn make_tile(&mut self, quadrant: Quadrant) {
         if self.radius == 1 {
-            return Err("tile too small for subtiles");
+            panic!("tile too small for subtiles");
         }
         if !matches!(self.subtile_mut(quadrant), Tile::None) {
-            return Err("quadrant not empty");
+            panic!("quadrant not empty");
         }
         let new_tile = Subtiles {
             radius: self.radius / 2,
@@ -153,6 +179,7 @@ impl Subtiles {
             top_right:    Tile::None,
             bottom_left:  Tile::None,
             bottom_right: Tile::None,
+            builder: self.builder,
         };
         match quadrant {
             Quadrant::TopLeft     => self.top_left     = Tile::Subtiles(Box::new(new_tile)),
@@ -160,24 +187,6 @@ impl Subtiles {
             Quadrant::BottomLeft  => self.bottom_left  = Tile::Subtiles(Box::new(new_tile)),
             Quadrant::BottomRight => self.bottom_right = Tile::Subtiles(Box::new(new_tile)),
         };
-        Ok(())
-    }
-
-    fn add_cell(&mut self, cell: Cell, quadrant: Quadrant)
-        -> Result<(), &'static str> {
-        if self.radius != 1 {
-            return Err("tile too large");
-        }
-        if !matches!(self.subtile_mut(quadrant), Tile::None) {
-            return Err("quadrant not empty");
-        }
-        match quadrant {
-            Quadrant::TopLeft     => self.top_left     = Tile::Cell(cell),
-            Quadrant::TopRight    => self.top_right    = Tile::Cell(cell),
-            Quadrant::BottomLeft  => self.bottom_left  = Tile::Cell(cell),
-            Quadrant::BottomRight => self.bottom_right = Tile::Cell(cell),
-        };
-        Ok(())
     }
 
     pub fn left(&self) -> i32 {

@@ -1,11 +1,21 @@
 use crate::{grid::{Grid, Place}, view::View};
 
+pub enum Action {
+    MoveCursor(Direction),
+    Reveal,
+    Flag,
+}
+
+pub enum  Direction {
+    Left,
+    Right,
+    Up,
+    Down,
+}
 
 pub struct Game {
     grid: Grid,
     cursor: Place,
-    viewWidth: usize,
-    viewHeight: usize,
 }
 
 impl Game {
@@ -16,10 +26,19 @@ impl Game {
         }
     }
 
-    pub fn view(&self) -> View {
+    // pub fn action(&self, action: Action) {
+    //     match action {
+    //         Action::Reveal => self.grid.reveal(self.cursor),
+    //         Action::Flag => self.grid.
+    //     }
+    // }
+
+    pub fn view(&self, view_width: usize, view_height: usize) -> View {
         View::new(
-            &self.grid, self.viewWidth,
-            self.viewHeight, self.cursor,
+            &self.grid,
+            view_width,
+            view_height,
+            self.cursor,
         )
     }
 }
