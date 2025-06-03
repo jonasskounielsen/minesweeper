@@ -1,4 +1,4 @@
-use self::cell::Cell;
+use self::cell::{Cell, CellValue};
 use self::tile::{Tile, Subtiles};
 
 pub mod cell;
@@ -38,7 +38,8 @@ impl Grid {
             self.expand();
             self.generate(place)
         } else {
-            self.tile.generate(place)
+            let cell = Cell::new(CellValue::Empty);
+            self.tile.add(cell, place)
         }
     }
 

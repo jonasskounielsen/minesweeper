@@ -1,5 +1,6 @@
 pub mod grid;
 pub mod view;
+pub mod game;
 
 use grid::{Grid, Input, Place};
 use view::View;

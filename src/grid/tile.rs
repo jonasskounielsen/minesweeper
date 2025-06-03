@@ -1,4 +1,3 @@
-use super::cell::CellValue;
 use super::{Cell, Place};
 
 #[derive(Debug)]
@@ -79,25 +78,25 @@ impl Subtiles {
         }
     }
 
-    pub fn generate(&mut self, place: Place) -> Result<(), &'static str> {
+    pub fn add(&mut self, cell: Cell, place: Place) -> Result<(), &'static str> {
         let quadrant = self.quadrant(place)?;
         let subtile = self.subtile_mut(quadrant);
 
         match subtile {
             Tile::None => {
                 if self.radius == 1 {
-                    self.make_cell(quadrant)
+                    self.add_cell(cell, quadrant)
                 } else {
                     self.make_tile(quadrant)?;
                     if let Tile::Subtiles(subtile) = self.subtile_mut(quadrant) {
-                        subtile.generate(place)
+                        subtile.add(cell, place)
                     } else {
                         unreachable!(); // we just made a subtile there
                     }
                 }
             },
             Tile::Cell(_) => Err("cell already exists"),
-            Tile::Subtiles(subtile) => subtile.generate(place),
+            Tile::Subtiles(subtile) => subtile.add(cell, place),
         }
     }
 
@@ -164,14 +163,14 @@ impl Subtiles {
         Ok(())
     }
 
-    fn make_cell(&mut self, quadrant: Quadrant) -> Result<(), &'static str> {
+    fn add_cell(&mut self, cell: Cell, quadrant: Quadrant)
+        -> Result<(), &'static str> {
         if self.radius != 1 {
             return Err("tile too large");
         }
         if !matches!(self.subtile_mut(quadrant), Tile::None) {
             return Err("quadrant not empty");
         }
-        let cell = Cell::new(CellValue::Empty);
         match quadrant {
             Quadrant::TopLeft     => self.top_left     = Tile::Cell(cell),
             Quadrant::TopRight    => self.top_right    = Tile::Cell(cell),
