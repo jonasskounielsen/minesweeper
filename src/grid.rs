@@ -32,9 +32,6 @@ impl Grid {
             self.expand();
             self.get_mut(place);
         }
-        if let None = self.tile.get(place) {
-            
-        }
         self.tile.get_mut(place)
         // we already checked for out of bounds
     }
