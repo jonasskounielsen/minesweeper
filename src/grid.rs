@@ -1,39 +1,41 @@
 use self::cell::{Cell, CellValue};
 use self::tile::{Tile, Subtiles};
+use std::cell::RefCell;
 
 pub mod cell;
 mod tile;
 
 #[derive(Debug)]
 pub struct Grid {
-    tile: Subtiles,
+    tile: RefCell<Subtiles>,
     mine_concentration: f32,
 }
 
 impl Grid {
     pub fn new(mine_concentration: f32) -> Grid {
         Self {
-            tile: Tile::new(1, |_| Cell::new(CellValue::Mine)),
+            tile: RefCell::new(
+                Tile::new(1, |_| Cell::new(CellValue::Mine)),
+            ),
             mine_concentration,
         }
     }
 
-    pub fn get(&self, place: Place) -> Option<&Cell> {
+    pub fn get(&self, place: Place) -> Cell {
         if place.radius() > self.tile.radius {
             None
         } else {
             self.tile.get(place)
         }
-        // we already checked for out of bounds
     }
 
     pub fn get_mut(&mut self, place: Place) -> &mut Cell {
-        if place.radius() > self.tile.radius {
+        if place.radius() > self.tile.borrow().radius {
             self.expand();
-            self.get_mut(place);
+            return self.get_mut(place);
         }
-        self.tile.get_mut(place)
-        // we already checked for out of bounds
+        // let mut tile = self.tile.borrow_mut();
+        self.tile.borrow_mut().get_mut(place)
     }
 
     fn expand(&mut self) {
