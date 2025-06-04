@@ -60,25 +60,15 @@ impl Subtiles {
         bottom_right: Tile::None,
         builder: |_| unimplemented!("dummy struct"),
     };
-
-    pub fn get(&self, place: Place) -> Option<&Cell> {
-        let subtile = self.subtile(self.quadrant(place));
-
-        match subtile {
-            Tile::None => None,
-            Tile::Cell(cell) => Some(&cell),
-            Tile::Subtiles(subtile) => subtile.get(place),
-        }
-    }
     
-    pub fn get_mut(&mut self, place: Place) -> &mut Cell {
+    pub fn get(&mut self, place: Place) -> &mut Cell {
         let quadrant = self.quadrant(place);
         let tile = std::mem::replace(self.subtile_mut(quadrant), Tile::None);
 
         match tile {
             Tile::None => {
                 self.add(place);
-                self.get_mut(place)
+                self.get(place)
             },
             Tile::Cell(cell) => {
                 *self.subtile_mut(quadrant) = Tile::Cell(cell);
@@ -90,7 +80,7 @@ impl Subtiles {
             Tile::Subtiles(subtile) => {
                 *self.subtile_mut(quadrant) = Tile::Subtiles(subtile);
                 match self.subtile_mut(quadrant) {
-                    Tile::Subtiles(subtile) => subtile.get_mut(place),
+                    Tile::Subtiles(subtile) => subtile.get(place),
                     _ => unreachable!(), // we just set this tile to subtiles
                 }
             },
@@ -124,6 +114,57 @@ impl Subtiles {
             Tile::Cell(_) => panic!("cell already exists"),
             Tile::Subtiles(subtile) => subtile.add(place),
         }
+    }
+
+    pub fn expand(&mut self) {
+        let old_radius = self.radius;
+        let old_tile = std::mem::replace(self, Subtiles::DUMMY);
+        let old_left = old_tile.left();
+        let old_right = old_tile.right();
+        let old_top = old_tile.top();
+        let old_bottom = old_tile.bottom();
+
+        *self = Subtiles {
+            radius: old_radius * 2,
+            origin: Place::ORIGIN,
+            builder: old_tile.builder,
+            top_left: Tile::Subtiles(Box::new(Subtiles {
+                radius: old_radius,
+                origin: Place { x: old_left, y: old_top },
+                top_left:     Tile::None,
+                top_right:    Tile::None,
+                bottom_left:  Tile::None,
+                bottom_right: old_tile.top_left.or_none(),
+                builder: old_tile.builder,
+            })),
+            top_right: Tile::Subtiles(Box::new(Subtiles {
+                radius: old_radius,
+                origin: Place { x: old_right, y: old_top },
+                top_left:     Tile::None,
+                top_right:    Tile::None,
+                bottom_left:  old_tile.top_right.or_none(),
+                bottom_right: Tile::None,
+                builder: old_tile.builder,
+            })),
+            bottom_left: Tile::Subtiles(Box::new(Subtiles {
+                radius: old_radius,
+                origin: Place { x: old_left, y: old_bottom },
+                top_left:     Tile::None,
+                top_right:    old_tile.bottom_left.or_none(),
+                bottom_left:  Tile::None,
+                bottom_right: Tile::None,
+                builder: old_tile.builder,
+            })),
+            bottom_right: Tile::Subtiles(Box::new(Subtiles {
+                radius: old_radius,
+                origin: Place { x: old_right, y: old_bottom },
+                top_left:     old_tile.bottom_right.or_none(),
+                top_right:    Tile::None,
+                bottom_left:  Tile::None,
+                bottom_right: Tile::None,
+                builder: old_tile.builder,
+            })),
+        };
     }
 
     fn quadrant(&self, place: Place) -> Quadrant {

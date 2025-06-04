@@ -70,9 +70,9 @@ impl View<'_> {
     fn get_view_cell(grid: &Grid, place: Place) -> ViewCell {
         let cell = grid.get(place);
         match cell {
-            Some(Cell { revealed: false, .. }) | None  => ViewCell::Unrevealed,
-            Some(Cell { value: CellValue::Empty, .. }) => ViewCell::Clear,
-            Some(Cell { value: CellValue::Mine,  .. }) => ViewCell::Mine,
+            Cell { revealed: false, .. }         => ViewCell::Unrevealed,
+            Cell { value: CellValue::Empty, .. } => ViewCell::Clear,
+            Cell { value: CellValue::Mine,  .. } => ViewCell::Mine,
         }
     }
 
@@ -83,8 +83,7 @@ impl View<'_> {
             for y in 0..self.width {
                 line += &self.matrix.get(x, y).char().to_string();
             }
-            line += "
-            ";
+            line += "\n";
             text += &line;
         }
         text
