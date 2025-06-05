@@ -1,16 +1,25 @@
-use crate::{grid::{Grid, Place}, view::View};
+use crate::view::{Size, View};
+use crate::grid::{Grid, Place};
+use crate::grid::cell::{Cell, CellValue};
 
 pub enum Action {
     MoveCursor(Direction),
     Reveal,
     Flag,
+    RevealAdjacent,
 }
 
 pub enum  Direction {
     Left,
     Right,
-    Up,
     Down,
+    Up,
+}
+
+pub enum MineCount {
+    Zero,
+    One, Two, Three, Four,
+    Five, Six, Seven, Eight,
 }
 
 pub struct Game {
@@ -26,18 +35,77 @@ impl Game {
         }
     }
 
-    // pub fn action(&self, action: Action) {
-    //     match action {
-    //         Action::Reveal => self.grid.reveal(self.cursor),
-    //         Action::Flag => self.grid.
-    //     }
-    // }
+    pub fn action(&mut self, action: Action) {
+        match action {
+            Action::Flag           => self.grid.get_mut(self.cursor).flag(),
+            Action::Reveal         => self.reveal(self.cursor),
+            Action::RevealAdjacent => self.reveal_adjacent(self.cursor),
+            Action::MoveCursor(direction) => {
+                match direction {
+                    Direction::Left   => self.cursor.x -= 1,
+                    Direction::Right  => self.cursor.x += 1,
+                    Direction::Down   => self.cursor.y -= 1,
+                    Direction::Up     => self.cursor.y += 1,
+                }
+            },
+        }
+    }
 
-    pub fn view(&self, view_width: usize, view_height: usize) -> View {
+    fn reveal(&mut self, place: Place) {
+        self.grid.get_mut(place).reveal();
+        if let MineCount::Zero = Self::mine_count(&self.grid, self.cursor) {
+            for i in -1..1 {
+                for j in -1..1 {
+                    if let (0, 0) = (i, j) {
+                        continue;
+                    }
+                    let place = Place { x: self.cursor.x + i, y: self.cursor.y + j };
+                    self.reveal(place);
+                }
+            }
+        }
+    }
+
+    fn reveal_adjacent(&mut self, place: Place) {
+        if let MineCount::Zero = Self::mine_count(&self.grid, self.cursor) {
+            for i in -1..1 {
+                for j in -1..1 {
+                    if let (0, 0) = (i, j) {
+                        continue;
+                    }
+                    let place = Place { x: self.cursor.x + i, y: self.cursor.y + j };
+                    self.reveal(place);
+                }
+            }
+        }
+    }
+
+    pub fn mine_count(grid: &Grid, place: Place) -> MineCount {
+        let mut count = 0;
+        for i in -1..1 {
+            for j in -1..1 {
+                if let (0, 0) = (i, j) {
+                    continue;
+                }
+                if let Cell { value: CellValue::Mine, .. } = grid.get(place) {
+                    count += 1;
+                }
+            }
+        }
+        match count {
+            0 => MineCount::Zero,
+            1 => MineCount::One,   2 => MineCount::Two,
+            3 => MineCount::Three, 4 => MineCount::Four,
+            5 => MineCount::Five,  6 => MineCount::Six,
+            7 => MineCount::Seven, 8 => MineCount::Eight,
+            _ => unreachable!(), // we only check 8 tiles
+        }
+    }
+
+    pub fn view(&self, size: Size) -> View {
         View::new(
             &self.grid,
-            view_width,
-            view_height,
+            size,
             self.cursor,
         )
     }

@@ -1,16 +1,20 @@
 #[derive(Clone, Copy, Debug)]
 pub struct Cell {
     pub value: CellValue,
-    pub revealed: bool,
+    pub state: CellState,
 }
 
 impl Cell {
     pub fn new(value: CellValue) -> Self {
-        Self { value, revealed: false }
+        Self { value, state: CellState::Hidden }
     }
 
     pub fn reveal(&mut self) {
-        self.revealed = true;
+        self.state = CellState::Revealed;
+    }
+
+    pub fn flag(&mut self) {
+        self.state = CellState::Flagged;
     }
 }
 
@@ -18,4 +22,11 @@ impl Cell {
 pub enum CellValue {
     Mine,
     Empty,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum CellState {
+    Hidden,
+    Flagged,
+    Revealed,
 }
