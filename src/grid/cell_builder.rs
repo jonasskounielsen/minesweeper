@@ -28,8 +28,8 @@ impl CellBuilder {
         seed[12..16].copy_from_slice(&place.y  .to_be_bytes());
 
         let mut rng = StdRng::from_seed(seed);
-        
-        let value = if self.mine_concentration < rng.random() {
+
+        let value = if self.mine_concentration > rng.random() {
             CellValue::Mine
         } else {
             CellValue::Empty
