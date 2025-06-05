@@ -72,14 +72,30 @@ impl View<'_> {
 
     pub fn as_text(&self) -> String {
         let mut text = String::new();
+
+        text += "\u{250F}";
+        text += &"\u{2501}".repeat(self.size.width * 2 + 1);
+        text += "\u{2513}";
+        text += "\n";
+
         for x in 0..self.size.height {
             let mut line = String::new();
+            line += "\u{2503}";
+            line += " ";
             for y in 0..self.size.width {
                 line += &self.matrix.get(x, y).char().to_string();
+                line += " "; // terminal characters are approx. half a sqaure horizontally
             }
+            line += "\u{2503}";
             line += "\n";
             text += &line;
         }
+
+        text += "\u{2517}";
+        text += &"\u{2501}".repeat(self.size.width * 2 + 1);
+        text += "\u{251B}";
+        text += "\n";
+
         text
     }
 }

@@ -1,4 +1,4 @@
-use super::{Cell, Place};
+use super::{Cell, Place, cell_builder::CellBuilder};
 
 #[derive(Debug)]
 pub enum Tile {
@@ -15,7 +15,7 @@ pub struct Subtiles {
     pub bottom_right: Tile,
     pub top_left:     Tile,
     pub top_right:    Tile,
-    pub builder: fn(Place) -> Cell,
+    pub builder: CellBuilder,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -27,7 +27,7 @@ pub enum Quadrant {
 }
 
 impl Tile {
-    pub fn new(radius: i32, builder: fn(Place) -> Cell) -> Subtiles {
+    pub fn new(radius: i32, builder: CellBuilder) -> Subtiles {
         Subtiles {
             origin: Place::ORIGIN,
             radius,
@@ -64,7 +64,7 @@ impl Subtiles {
         bottom_right: Tile::None,
         top_left:     Tile::None,
         top_right:    Tile::None,
-        builder: |_| unimplemented!("dummy struct"),
+        builder: CellBuilder::DUMMY,
     };
     
     pub fn get(&mut self, place: Place) -> &mut Cell {
@@ -101,7 +101,7 @@ impl Subtiles {
         match subtile {
             Tile::None => {
                 if self.radius == 1 {
-                    let cell = (self.builder)(place);
+                    let cell = self.builder.cell(place);
                     match quadrant {
                         Quadrant::BottomLeft  => self.bottom_left  = Tile::Cell(cell),
                         Quadrant::BottomRight => self.bottom_right = Tile::Cell(cell),

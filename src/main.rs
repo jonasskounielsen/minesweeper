@@ -6,7 +6,7 @@ use grid::{Grid, Place};
 use view::{View, Size};
 
 fn main() {
-    let mut grid = Grid::new(0.3f32);
+    let mut grid = Grid::new(0.3f32, 0xDEADBEEF);
 
     grid.get_mut(Place { x: 2, y: 6 });
     grid.get_mut(Place { x: 3, y: -4 });
