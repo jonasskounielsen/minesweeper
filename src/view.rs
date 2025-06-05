@@ -71,6 +71,7 @@ impl View<'_> {
     }
 
     pub fn as_text(&self) -> String {
+        // characters from https://en.wikipedia.org/wiki/Box-drawing_characters
         let mut text = String::new();
 
         text += "\u{250F}";
