@@ -40,8 +40,8 @@ impl View<'_> {
             size,
             |relative_x, relative_y| {
                 let cell_position = Place {
-                    x: origin.x + size.width  as i32 / 2 - relative_x as i32 - 1,
-                    y: origin.y + size.height as i32 / 2 - relative_y as i32 - 1,
+                    x: origin.x - size.width  as i32 / 2 + relative_x as i32,
+                    y: origin.y - size.height as i32 / 2 + relative_y as i32,
                 };
                 Self::get_view_cell(grid, cell_position)
             },

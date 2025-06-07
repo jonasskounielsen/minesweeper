@@ -34,7 +34,7 @@ impl CellBuilder {
         } else {
             CellValue::Empty
         };
-        let value = if place.x < 0 { CellValue::Mine } else { CellValue::Empty }; // dbg
+        let value = if place.y < 0 { CellValue::Mine } else { CellValue::Empty }; // dbg
         let mut cell = Cell::new(value);
         cell.reveal();
         cell
