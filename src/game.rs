@@ -16,6 +16,7 @@ pub enum  Direction {
     Up,
 }
 
+#[derive(Debug)]
 pub enum MineCount {
     Zero,
     One, Two, Three, Four,
@@ -67,7 +68,7 @@ impl Game {
     }
 
     fn reveal_adjacent(&mut self, place: Place) {
-        if let MineCount::Zero = Self::mine_count(&self.grid, self.cursor) {
+        if let MineCount::Zero = Self::mine_count(&self.grid, place) {
             for i in -1..1 {
                 for j in -1..1 {
                     if let (0, 0) = (i, j) {
@@ -87,6 +88,7 @@ impl Game {
                 if let (0, 0) = (i, j) {
                     continue;
                 }
+                // dbg!(grid.get(place), place);
                 if let Cell { value: CellValue::Mine, .. } = grid.get(place) {
                     count += 1;
                 }

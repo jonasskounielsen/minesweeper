@@ -6,25 +6,17 @@ use grid::{Grid, Place};
 use view::{View, Size};
 
 fn main() {
-    let mut grid = Grid::new(0.3f32, 0xDEADBEEF);
-
-    grid.get_mut(Place { x: 2, y: 6 });
-    grid.get_mut(Place { x: 3, y: -4 });
-    grid.get_mut(Place { x: -3, y: -6 });
-    grid.get_mut(Place { x: -2, y: 1 });
-
-    grid.get(Place { x: 2, y: 6 });
-    grid.get(Place { x: 3, y: -4 });
-    grid.get(Place { x: -3, y: -6 });
-    grid.get(Place { x: -2, y: 1 });
-    
-    grid.get_mut(Place { x: 3, y: -4 }).reveal();
-    grid.get_mut(Place { x: -3, y: -6 }).reveal();
+    let mut grid = Grid::new(0.8f32, 0xDEADBEEF);
 
     let view = View::new(
-        &grid, Size { width: 16, height: 16 },
+        &grid, Size { width: 4, height: 4 },
         Place { x: 0, y: 0 },
     );
 
     println!("{}", view.as_text());
+
+    dbg!(grid.get(Place { x: -1, y: 0 }));
+    dbg!(grid.get(Place { x: 0, y: 0 }));
+    dbg!(grid.get(Place { x: -1, y: -1 }));
+    dbg!(grid.get(Place { x: 0, y: -1 }));
 }

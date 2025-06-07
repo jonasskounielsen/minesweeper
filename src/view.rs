@@ -79,12 +79,13 @@ impl View<'_> {
         text += "\u{2513}";
         text += "\n";
 
-        for x in 0..self.size.height {
+        for y in (0..self.size.height).rev() {
             let mut line = String::new();
             line += "\u{2503}";
             line += " ";
-            for y in 0..self.size.width {
+            for x in 0..self.size.width {
                 line += &self.matrix.get(x, y).char().to_string();
+                // line += &(x.to_string() + &y.to_string());
                 line += " "; // terminal characters are approx. half a sqaure horizontally
             }
             line += "\u{2503}";
