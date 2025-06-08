@@ -38,10 +38,10 @@ impl View<'_> {
     pub fn new(grid: &Grid, size: Size, origin: Place) -> View {
         let matrix = Matrix::new(
             size,
-            |relative_x, relative_y| {
+            |relative: matrix::Place| {
                 let cell_position = Place {
-                    x: origin.x - size.width  as i32 / 2 + relative_x as i32,
-                    y: origin.y - size.height as i32 / 2 + relative_y as i32,
+                    x: origin.x - size.width  as i32 / 2 + relative.x as i32,
+                    y: origin.y - size.height as i32 / 2 + relative.y as i32,
                 };
                 Self::get_view_cell(grid, cell_position)
             },
@@ -84,7 +84,7 @@ impl View<'_> {
             line += "\u{2503}";
             line += " ";
             for x in 0..self.size.width {
-                line += &self.matrix.get(x, y).char().to_string();
+                line += &self.matrix.get(matrix::Place { x: x, y: y }).char().to_string();
                 line += " "; // terminal characters are approx. half a sqaure horizontally
             }
             line += "\u{2503}";

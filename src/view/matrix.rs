@@ -7,14 +7,14 @@ pub struct Matrix<T> {
 }
 
 impl<T> Matrix<T> {
-    pub fn new<F: FnMut(usize, usize) -> T>(
+    pub fn new<F: FnMut(Place) -> T>(
         size: Size,
         mut builder: F,
     ) -> Matrix<T> {
         let data =
             (0..size.width).map(
                 |x| (0..size.height).map(
-                    |y| builder(x, y),
+                    |y| builder(Place { x: x, y: y }),
                 ).collect::<Box<[T]>>(),
             ).flatten().collect();
         Matrix {
@@ -23,7 +23,12 @@ impl<T> Matrix<T> {
         }
     }
 
-    pub fn get(&self, x: usize, y: usize) -> &T {
-        &self.data[x * self.size.width + y]
+    pub fn get(&self, place: Place) -> &T {
+        &self.data[place.x * self.size.width + place.y]
     }
+}
+
+pub struct Place {
+    pub x: usize,
+    pub y: usize,
 }
