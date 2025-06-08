@@ -55,8 +55,8 @@ impl Game {
     fn reveal(&mut self, place: Place) {
         self.grid.get_mut(place).reveal();
         if let MineCount::Zero = Self::mine_count(&self.grid, self.cursor) {
-            for i in -1..1 {
-                for j in -1..1 {
+            for i in -1..=1 {
+                for j in -1..=1 {
                     if let (0, 0) = (i, j) {
                         continue;
                     }
@@ -69,8 +69,8 @@ impl Game {
 
     fn reveal_adjacent(&mut self, place: Place) {
         if let MineCount::Zero = Self::mine_count(&self.grid, place) {
-            for i in -1..1 {
-                for j in -1..1 {
+            for i in -1..=1 {
+                for j in -1..=1 {
                     if let (0, 0) = (i, j) {
                         continue;
                     }
@@ -83,12 +83,12 @@ impl Game {
 
     pub fn mine_count(grid: &Grid, place: Place) -> MineCount {
         let mut count = 0;
-        for i in -1..1 {
-            for j in -1..1 {
+        for i in -1..=1 {
+            for j in -1..=1 {
                 if let (0, 0) = (i, j) {
                     continue;
                 }
-                // dbg!(grid.get(place), place);
+                let place = Place { x: place.x + i, y: place.y + j }; 
                 if let Cell { value: CellValue::Mine, .. } = grid.get(place) {
                     count += 1;
                 }

@@ -85,7 +85,6 @@ impl View<'_> {
             line += " ";
             for x in 0..self.size.width {
                 line += &self.matrix.get(x, y).char().to_string();
-                // line += &(x.to_string() + &y.to_string());
                 line += " "; // terminal characters are approx. half a sqaure horizontally
             }
             line += "\u{2503}";
