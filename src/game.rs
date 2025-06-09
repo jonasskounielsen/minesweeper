@@ -1,5 +1,6 @@
-use crate::view::{Size, View};
-use crate::grid::{Grid, Place};
+use crate::view::View;
+use crate::helper::{SizeUsize, PlaceI32};
+use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellValue};
 
 pub enum Action {
@@ -25,14 +26,14 @@ pub enum MineCount {
 
 pub struct Game {
     grid: Grid,
-    cursor: Place,
+    cursor: PlaceI32,
 }
 
 impl Game {
     pub fn new(grid: Grid) -> Game {
         Game {
             grid,
-            cursor: Place { x: 0, y: 0 },
+            cursor: PlaceI32 { x: 0, y: 0 },
         }
     }
 
@@ -52,7 +53,7 @@ impl Game {
         }
     }
 
-    fn reveal(&mut self, place: Place) {
+    fn reveal(&mut self, place: PlaceI32) {
         self.grid.get_mut(place).reveal();
         if let MineCount::Zero = Self::mine_count(&self.grid, self.cursor) {
             for i in -1..=1 {
@@ -60,35 +61,35 @@ impl Game {
                     if let (0, 0) = (i, j) {
                         continue;
                     }
-                    let place = Place { x: self.cursor.x + i, y: self.cursor.y + j };
+                    let place = PlaceI32 { x: self.cursor.x + i, y: self.cursor.y + j };
                     self.reveal(place);
                 }
             }
         }
     }
 
-    fn reveal_adjacent(&mut self, place: Place) {
+    fn reveal_adjacent(&mut self, place: PlaceI32) {
         if let MineCount::Zero = Self::mine_count(&self.grid, place) {
             for i in -1..=1 {
                 for j in -1..=1 {
                     if let (0, 0) = (i, j) {
                         continue;
                     }
-                    let place = Place { x: self.cursor.x + i, y: self.cursor.y + j };
+                    let place = PlaceI32 { x: self.cursor.x + i, y: self.cursor.y + j };
                     self.reveal(place);
                 }
             }
         }
     }
 
-    pub fn mine_count(grid: &Grid, place: Place) -> MineCount {
+    pub fn mine_count(grid: &Grid, place: PlaceI32) -> MineCount {
         let mut count = 0;
         for i in -1..=1 {
             for j in -1..=1 {
                 if let (0, 0) = (i, j) {
                     continue;
                 }
-                let place = Place { x: place.x + i, y: place.y + j }; 
+                let place = PlaceI32 { x: place.x + i, y: place.y + j }; 
                 if let Cell { value: CellValue::Mine, .. } = grid.get(place) {
                     count += 1;
                 }
@@ -104,7 +105,7 @@ impl Game {
         }
     }
 
-    pub fn view(&self, size: Size) -> View {
+    pub fn view(&self, size: SizeUsize) -> View {
         View::new(
             &self.grid,
             size,

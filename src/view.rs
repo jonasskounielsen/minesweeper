@@ -1,8 +1,8 @@
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
-use crate::grid;
-use super::{Grid, Place};
+use super::Grid;
 use self::matrix::Matrix;
+use crate::helper::{PlaceI32, PlaceUsize, SizeUsize};
 
 mod matrix;
 
@@ -30,16 +30,16 @@ impl ViewCell {
 #[derive(Debug)]
 pub struct View {
     matrix: Matrix<ViewCell>,
-    size: Size,
-    cursor: Option<matrix::Place>,
+    size: SizeUsize,
+    cursor: Option<PlaceUsize>,
 }
 
 impl View {
-    pub fn new(grid: &Grid, size: Size, origin: Place, cursor: Place) -> View {
+    pub fn new(grid: &Grid, size: SizeUsize, origin: PlaceI32, cursor: PlaceI32) -> View {
         let matrix = Matrix::new(
             size,
-            |relative: matrix::Place| {
-                let cell_position = Place {
+            |relative: PlaceUsize| {
+                let cell_position = PlaceI32 {
                     x: origin.x - size.width  as i32 / 2 + relative.x as i32,
                     y: origin.y - size.height as i32 / 2 + relative.y as i32,
                 };
@@ -47,7 +47,7 @@ impl View {
             },
         );
         let cursor = if cursor.within(origin, size.into()) {
-            Some(matrix::Place {
+            Some(PlaceUsize {
                 x: cursor.x as usize + size.width  as usize / 2 - origin.x as usize,
                 y: cursor.y as usize + size.height as usize / 2 - origin.y as usize,
             })
@@ -59,7 +59,7 @@ impl View {
         }
     }
 
-    fn get_view_cell(grid: &Grid, place: Place) -> ViewCell {
+    fn get_view_cell(grid: &Grid, place: PlaceI32) -> ViewCell {
         let cell = grid.get(place);
         match cell {
             Cell { state: CellState::Hidden,  .. } => ViewCell::Unrevealed,
@@ -89,8 +89,7 @@ impl View {
             line += "\u{2503}";
             line += " ";
             for x in 0..self.size.width {
-                let place = matrix::Place { x: x, y: y };
-                dbg!(&self.cursor, &place);
+                let place = PlaceUsize { x: x, y: y };
                 match &self.cursor {
                     Some(cursor) if *cursor == place && Self::draw_cursor() => line += "_",
                     _ => line += &self.matrix.get(place).char().to_string(),
@@ -113,26 +112,10 @@ impl View {
     fn draw_cursor() -> bool {
         let now = std::time::SystemTime::now();
         let duration = now.duration_since(std::time::UNIX_EPOCH).unwrap();
-        dbg!(now, duration);
         if duration.as_secs() % 2 == 0 {
             true
         } else {
             false
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Size {
-    pub width: usize,
-    pub height: usize,
-}
-
-impl Into<grid::Size> for Size {
-    fn into(self) -> grid::Size {
-        grid::Size {
-            width:  self.width  as i32,
-            height: self.height as i32,
         }
     }
 }

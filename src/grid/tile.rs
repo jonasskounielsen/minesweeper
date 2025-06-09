@@ -1,4 +1,4 @@
-use super::{Cell, Place, cell_builder::CellBuilder};
+use super::{Cell, PlaceI32, cell_builder::CellBuilder};
 
 #[derive(Debug)]
 pub enum Tile {
@@ -10,7 +10,7 @@ pub enum Tile {
 #[derive(Debug)]
 pub struct Subtiles {
     pub radius: i32,
-    pub origin: Place,
+    pub origin: PlaceI32,
     pub bottom_left:  Tile,
     pub bottom_right: Tile,
     pub top_left:     Tile,
@@ -29,7 +29,7 @@ pub enum Quadrant {
 impl Tile {
     pub fn new(radius: i32, builder: CellBuilder) -> Subtiles {
         Subtiles {
-            origin: Place::ORIGIN,
+            origin: PlaceI32::ORIGIN,
             radius,
             bottom_left:  Tile::None,
             bottom_right: Tile::None,
@@ -58,7 +58,7 @@ impl Tile {
 
 impl Subtiles {
     pub const DUMMY: Subtiles = Subtiles {
-        origin: Place::ORIGIN,
+        origin: PlaceI32::ORIGIN,
         radius: 1,
         bottom_left:  Tile::None,
         bottom_right: Tile::None,
@@ -67,7 +67,7 @@ impl Subtiles {
         builder: CellBuilder::DUMMY,
     };
     
-    pub fn get(&mut self, place: Place) -> &mut Cell {
+    pub fn get(&mut self, place: PlaceI32) -> &mut Cell {
         let quadrant = self.quadrant(place);
         let tile = std::mem::replace(self.subtile(quadrant), Tile::None);
 
@@ -96,7 +96,7 @@ impl Subtiles {
         
     }
 
-    fn add(&mut self, place: Place) {
+    fn add(&mut self, place: PlaceI32) {
         let radius = self.radius;
         let quadrant = self.quadrant(place);
         let subtile = self.subtile(quadrant);
@@ -134,12 +134,12 @@ impl Subtiles {
 
         *self = Subtiles {
             radius: old_radius * 2,
-            origin: Place::ORIGIN,
+            origin: PlaceI32::ORIGIN,
             builder: old_tile.builder,
 
             bottom_left: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
-                origin: Place { x: old_left, y: old_bottom },
+                origin: PlaceI32 { x: old_left, y: old_bottom },
                 bottom_left:  Tile::None,
                 bottom_right: Tile::None,
                 top_left:     Tile::None,
@@ -149,7 +149,7 @@ impl Subtiles {
 
             bottom_right: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
-                origin: Place { x: old_right, y: old_bottom },
+                origin: PlaceI32 { x: old_right, y: old_bottom },
                 bottom_left:  Tile::None,
                 bottom_right: Tile::None,
                 top_left:     old_tile.bottom_right.or_none(),
@@ -159,7 +159,7 @@ impl Subtiles {
 
             top_left: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
-                origin: Place { x: old_left, y: old_top },
+                origin: PlaceI32 { x: old_left, y: old_top },
                 bottom_left:  Tile::None,
                 bottom_right: old_tile.top_left.or_none(),
                 top_left:     Tile::None,
@@ -169,7 +169,7 @@ impl Subtiles {
 
             top_right: Tile::Subtiles(Box::new(Subtiles {
                 radius: old_radius,
-                origin: Place { x: old_right, y: old_top },
+                origin: PlaceI32 { x: old_right, y: old_top },
                 bottom_left:  old_tile.top_right.or_none(),
                 bottom_right: Tile::None,
                 top_left:     Tile::None,
@@ -180,8 +180,8 @@ impl Subtiles {
         };
     }
 
-    fn quadrant(&self, place: Place) -> Quadrant {
-        let Place { x, y } = place;
+    fn quadrant(&self, place: PlaceI32) -> Quadrant {
+        let PlaceI32 { x, y } = place;
 
         if        self.left()   <= x && x < self.origin.x && self.bottom() <= y && y < self.origin.y {
             Quadrant::BottomLeft
@@ -215,10 +215,10 @@ impl Subtiles {
         let new_tile = Subtiles {
             radius: self.radius / 2,
             origin: match quadrant {
-                Quadrant::BottomLeft  => Place { x: self.origin.x - self.radius / 2, y: self.origin.y - self.radius / 2 },
-                Quadrant::BottomRight => Place { x: self.origin.x + self.radius / 2, y: self.origin.y - self.radius / 2 },
-                Quadrant::TopLeft     => Place { x: self.origin.x - self.radius / 2, y: self.origin.y + self.radius / 2 },
-                Quadrant::TopRight    => Place { x: self.origin.x + self.radius / 2, y: self.origin.y + self.radius / 2 },
+                Quadrant::BottomLeft  => PlaceI32 { x: self.origin.x - self.radius / 2, y: self.origin.y - self.radius / 2 },
+                Quadrant::BottomRight => PlaceI32 { x: self.origin.x + self.radius / 2, y: self.origin.y - self.radius / 2 },
+                Quadrant::TopLeft     => PlaceI32 { x: self.origin.x - self.radius / 2, y: self.origin.y + self.radius / 2 },
+                Quadrant::TopRight    => PlaceI32 { x: self.origin.x + self.radius / 2, y: self.origin.y + self.radius / 2 },
             },
             bottom_left:  Tile::None,
             bottom_right: Tile::None,

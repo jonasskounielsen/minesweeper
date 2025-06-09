@@ -1,6 +1,6 @@
 use rand::{Rng, rngs::StdRng, SeedableRng};
 
-use super::{Place, Cell, CellValue};
+use super::{PlaceI32, Cell, CellValue};
 
 #[derive(Clone, Copy, Debug)]
 pub struct CellBuilder {
@@ -21,7 +21,7 @@ impl CellBuilder {
         }
     }
 
-    pub fn cell(&self, place: Place) -> Cell {
+    pub fn cell(&self, place: PlaceI32) -> Cell {
         let mut seed = [42; 32];
         seed[ 0..8 ].copy_from_slice(&self.seed.to_be_bytes());
         seed[ 8..12].copy_from_slice(&place.x  .to_be_bytes());
