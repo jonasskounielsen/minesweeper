@@ -4,17 +4,17 @@ use super::{PlaceI32, Cell, CellValue};
 
 #[derive(Clone, Copy, Debug)]
 pub struct CellBuilder {
-    mine_concentration: f32,
+    mine_concentration: f64,
     seed: u64,
 }
 
 impl CellBuilder {
     pub const DUMMY: CellBuilder = CellBuilder {
-        mine_concentration: 0f32,
+        mine_concentration: 0f64,
         seed: 0,
     };
 
-    pub fn new(mine_concentration: f32, seed: u64) -> CellBuilder {
+    pub fn new(mine_concentration: f64, seed: u64) -> CellBuilder {
         CellBuilder {
             mine_concentration,
             seed,

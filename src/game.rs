@@ -24,6 +24,7 @@ pub enum MineCount {
     Five, Six, Seven, Eight,
 }
 
+#[derive(Debug)]
 pub struct Game {
     grid: Grid,
     cursor: PlaceI32,
