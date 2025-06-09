@@ -109,6 +109,7 @@ impl Game {
             &self.grid,
             size,
             self.cursor,
+            self.cursor,
         )
     }
 }

@@ -2,16 +2,15 @@ pub mod grid;
 pub mod view;
 pub mod game;
 
+use game::Game;
 use grid::{Grid, Place};
-use view::{View, Size};
+use view::Size;
 
 fn main() {
     let /* mut */ grid = Grid::new(0.3f32, 0xDEADBEEF);
+    let game = Game::new(grid);
 
-    let view = View::new(
-        &grid, Size { width: 16, height: 16 },
-        Place { x: 0, y: 0 },
-    );
+    let view = game.view(Size { width: 16, height: 16 });
 
-    println!("{}", view.as_text());
+    println!("{}", view.render());
 }

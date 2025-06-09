@@ -28,6 +28,7 @@ impl<T> Matrix<T> {
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
 pub struct Place {
     pub x: usize,
     pub y: usize,

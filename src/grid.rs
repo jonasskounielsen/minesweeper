@@ -58,4 +58,19 @@ impl Place {
             if self.y >= 0 { self.y + 1 } else { self.y.abs() },
         )
     }
+
+    pub fn within(&self, place: Place, area: Size) -> bool {
+        if ((place.x - area.width  / 2)..(place.x + area.width  / 2)).contains(&self.x) &&
+           ((place.y - area.height / 2)..(place.y + area.height / 2)).contains(&self.y) {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Size {
+    pub width:  i32,
+    pub height: i32,
 }
