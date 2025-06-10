@@ -1,6 +1,6 @@
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
-use super::Grid;
+use crate::grid::Grid;
 use self::matrix::Matrix;
 use crate::helper::{PlaceI32, PlaceUsize, SizeUsize};
 
