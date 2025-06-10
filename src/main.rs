@@ -7,7 +7,8 @@ pub mod io;
 use game::Game;
 use grid::Grid;
 use helper::SizeUsize;
+use io::Io;
 
 fn main() {
-    
+    let io = Io::new();
 }
