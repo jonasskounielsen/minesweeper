@@ -48,8 +48,8 @@ impl View {
         );
         let cursor = if cursor.within(origin, size.into()) {
             Some(PlaceUsize {
-                x: cursor.x as usize + size.width  as usize / 2 - origin.x as usize,
-                y: cursor.y as usize + size.height as usize / 2 - origin.y as usize,
+                x: (cursor.x + size.width  as i32 / 2 - origin.x) as usize,
+                y: (cursor.y + size.height as i32 / 2 - origin.y) as usize,
             })
         } else { None };
         View {
@@ -75,14 +75,15 @@ impl View {
         }
     }
 
-    pub fn render(&self) -> String {
+    pub fn render(&self) -> Vec<String> {
         // characters from https://en.wikipedia.org/wiki/Box-drawing_characters
-        let mut text = String::new();
+        let mut lines = Vec::new();
 
-        text += "\u{250F}";
-        text += &"\u{2501}".repeat(self.size.width * 2 + 1);
-        text += "\u{2513}";
-        text += "\n";
+        let mut line = String::new(); 
+        line += "\u{250F}";
+        line += &"\u{2501}".repeat(self.size.width * 2 + 1);
+        line += "\u{2513}";
+        lines.push(line);
 
         for y in (0..self.size.height).rev() {
             let mut line = String::new();
@@ -97,16 +98,16 @@ impl View {
                 line += " "; // terminal characters are approx. half a sqaure horizontally
             }
             line += "\u{2503}";
-            line += "\n";
-            text += &line;
+            lines.push(line);
         }
 
-        text += "\u{2517}";
-        text += &"\u{2501}".repeat(self.size.width * 2 + 1);
-        text += "\u{251B}";
-        text += "\n";
+        let mut line = String::new(); 
+        line += "\u{2517}";
+        line += &"\u{2501}".repeat(self.size.width * 2 + 1);
+        line += "\u{251B}";
+        lines.push(line);
 
-        text
+        lines
     }
 
     fn draw_cursor() -> bool {

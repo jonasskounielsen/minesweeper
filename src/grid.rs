@@ -27,7 +27,6 @@ impl Grid {
             self.tile.borrow_mut().expand();
             self.get(place)
         } else {
-            // dbg!(place, self.tile.borrow_mut().get(place).clone()).1
             self.tile.borrow_mut().get(place).clone()
         }
     }

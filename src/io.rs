@@ -19,6 +19,9 @@ use crossterm::{
         EnterAlternateScreen,
         LeaveAlternateScreen,
     },
+    cursor::{
+        MoveTo,
+    },
     ExecutableCommand,
 };
 
@@ -40,18 +43,22 @@ impl Io {
     }
 
     pub fn run(&mut self, mut buffer: impl io::Write) -> io::Result<()> {
-        buffer.execute(EnterAlternateScreen)?;
-        enable_raw_mode();
+        //buffer.execute(EnterAlternateScreen)?;
+        enable_raw_mode()?;
         loop {
             buffer.execute(Clear(All))?;
 
             let view = self.game.view(self.view_size);
-            buffer.execute(Print(view.render()))?;
 
-            match read()? {
+            for (i, line) in view.render().iter().enumerate() {
+                buffer.execute(MoveTo(0, i as u16));
+                buffer.execute(Print(line))?;
+            }
+
+            match dbg!(read())? {
                 crossterm::event::Event::Key(key_event) => {
-                    if key_event.modifiers != event::KeyModifiers::NONE &&
-                       key_event.kind != event::KeyEventKind::Press {
+                    if key_event.modifiers == event::KeyModifiers::NONE &&
+                       key_event.kind == event::KeyEventKind::Press {
                         self.parse_key(key_event);
                     }
                 },
@@ -61,16 +68,17 @@ impl Io {
     }
 
     fn parse_key(&mut self, key: KeyEvent) {
-        match key.code {
-            KeyCode::Left      => self.game.action(Action::MoveCursor(Left)),
-            KeyCode::Right     => self.game.action(Action::MoveCursor(Right)),
-            KeyCode::Down      => self.game.action(Action::MoveCursor(Down)),
-            KeyCode::Up        => self.game.action(Action::MoveCursor(Up)),
+        let action = match key.code {
+            KeyCode::Left      => Action::MoveCursor(Left),
+            KeyCode::Right     => Action::MoveCursor(Right),
+            KeyCode::Down      => Action::MoveCursor(Down),
+            KeyCode::Up        => Action::MoveCursor(Up),
 
-            KeyCode::Enter     => self.game.action(Action::Reveal),
-            KeyCode::Char(' ') => self.game.action(Action::Flag),
-            _ => (),
-        }
+            KeyCode::Enter     => Action::Reveal,
+            KeyCode::Char(' ') => Action::Flag,
+            _ => return,
+        };
+        self.game.action(action);
     }
 }
 
