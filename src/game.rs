@@ -1,7 +1,7 @@
 use crate::view::View;
 use crate::helper::{SizeUsize, PlaceI32};
 use crate::grid::Grid;
-use crate::grid::cell::{Cell, CellValue};
+use crate::grid::cell::{Cell, CellState, CellValue};
 
 pub enum Action {
     MoveCursor(Direction),
@@ -40,7 +40,7 @@ impl Game {
 
     pub fn action(&mut self, action: Action) {
         match action {
-            Action::Flag           => self.grid.get_mut(self.cursor).flag(),
+            Action::Flag           => self.toggle_flag(self.cursor),
             Action::Reveal         => self.reveal(self.cursor),
             Action::RevealAdjacent => self.reveal_adjacent(self.cursor),
             Action::MoveCursor(direction) => {
@@ -54,31 +54,47 @@ impl Game {
         }
     }
 
+    fn toggle_flag(&mut self, place: PlaceI32) {
+        let mut cell = self.grid.get_mut(place);
+        match cell.state {
+            CellState::Hidden => cell.flag(),
+            CellState::Flagged => cell.unflag(),
+            _ => (),
+        }
+    }
+
     fn reveal(&mut self, place: PlaceI32) {
+        if let CellState::Revealed = self.grid.get(place).state { return };
+        
         self.grid.get_mut(place).reveal();
-        if let MineCount::Zero = Self::mine_count(&self.grid, self.cursor) {
-            for i in -1..=1 {
-                for j in -1..=1 {
-                    if let (0, 0) = (i, j) {
-                        continue;
-                    }
-                    let place = PlaceI32 { x: self.cursor.x + i, y: self.cursor.y + j };
-                    self.reveal(place);
+        
+        let MineCount::Zero = Self::mine_count(&self.grid, place) else { return; };
+        let CellValue::Empty = self.grid.get(place).value else { return; };
+
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if let (0, 0) = (i, j) {
+                    continue;
                 }
+                let place = PlaceI32 { x: place.x + i, y: place.y + j };
+                self.reveal(place);
             }
         }
     }
 
+    // in original minesweeper, doesn't reveal cells when there are too many flags around the cell 
     fn reveal_adjacent(&mut self, place: PlaceI32) {
-        if let MineCount::Zero = Self::mine_count(&self.grid, place) {
-            for i in -1..=1 {
-                for j in -1..=1 {
-                    if let (0, 0) = (i, j) {
-                        continue;
-                    }
-                    let place = PlaceI32 { x: self.cursor.x + i, y: self.cursor.y + j };
-                    self.reveal(place);
+        dbg!("test");
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if let (0, 0) = (i, j) {
+                    continue;
                 }
+                let place = PlaceI32 { x: place.x + i, y: place.y + j };
+
+                if let CellState::Flagged = self.grid.get(place).state { continue; }
+
+                self.reveal(place);
             }
         }
     }
@@ -91,7 +107,7 @@ impl Game {
                     continue;
                 }
                 let place = PlaceI32 { x: place.x + i, y: place.y + j }; 
-                if let Cell { value: CellValue::Mine, .. } = grid.get(place) {
+                if let Cell { value: CellValue::Mine, .. } = *grid.get(place) {
                     count += 1;
                 }
             }

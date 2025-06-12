@@ -10,11 +10,21 @@ impl Cell {
     }
 
     pub fn reveal(&mut self) {
-        self.state = CellState::Revealed;
+        if let CellState::Hidden = self.state {
+            self.state = CellState::Revealed;
+        }
     }
 
     pub fn flag(&mut self) {
-        self.state = CellState::Flagged;
+        if let CellState::Hidden = self.state {
+            self.state = CellState::Flagged;
+        }
+    }
+
+    pub fn unflag(&mut self) {
+        if let CellState::Flagged = self.state {
+            self.state = CellState::Hidden;
+        }
     }
 }
 

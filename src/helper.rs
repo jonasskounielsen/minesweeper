@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 #[derive(Clone, Copy, Debug)]
 pub struct PlaceI32 {
     pub x: i32,
@@ -49,5 +51,21 @@ impl Into<SizeI32> for SizeUsize {
             width:  self.width  as i32,
             height: self.height as i32,
         }
+    }
+}
+
+pub struct Immut<T>(T);
+
+impl<T> Immut<T> {
+    pub fn new(value: T) -> Immut<T> {
+        Immut(value)
+    }
+}
+
+impl<T> Deref for Immut<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

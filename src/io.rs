@@ -51,7 +51,7 @@ impl Io {
             let view = self.game.view(self.view_size);
 
             for (i, line) in view.render().iter().enumerate() {
-                buffer.execute(MoveTo(0, i as u16));
+                buffer.execute(MoveTo(0, i as u16))?;
                 buffer.execute(Print(line))?;
             }
 
@@ -75,6 +75,7 @@ impl Io {
             KeyCode::Up        => Action::MoveCursor(Up),
 
             KeyCode::Enter     => Action::Reveal,
+            KeyCode::Backspace => Action::RevealAdjacent,
             KeyCode::Char(' ') => Action::Flag,
             _ => return,
         };

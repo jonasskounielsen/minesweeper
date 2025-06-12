@@ -1,5 +1,5 @@
 use self::cell::{Cell, CellValue};
-use crate::helper::PlaceI32;
+use crate::helper::{Immut, PlaceI32};
 use self::cell_builder::CellBuilder;
 use self::tile::{Tile, Subtiles};
 use std::cell::{RefCell, RefMut};
@@ -22,12 +22,12 @@ impl Grid {
         }
     }
 
-    pub fn get(&self, place: PlaceI32) -> Cell {
+    pub fn get(&self, place: PlaceI32) -> Immut<Cell> {
         if place.radius() > self.tile.borrow().radius {
             self.tile.borrow_mut().expand();
             self.get(place)
         } else {
-            self.tile.borrow_mut().get(place).clone()
+            Immut::new(self.tile.borrow_mut().get(place).clone())
         }
     }
 

@@ -61,7 +61,7 @@ impl View {
 
     fn get_view_cell(grid: &Grid, place: PlaceI32) -> ViewCell {
         let cell = grid.get(place);
-        match cell {
+        match *cell {
             Cell { state: CellState::Hidden,  .. } => ViewCell::Unrevealed,
             Cell { state: CellState::Flagged, .. } => ViewCell::Flagged,
             Cell { value: CellValue::Mine,    .. } => ViewCell::Mine,
