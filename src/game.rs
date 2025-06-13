@@ -1,5 +1,5 @@
 use crate::view::View;
-use crate::helper::{SizeUsize, PlaceI32};
+use crate::helper::{PlaceI32, SizeI32, SizeUsize};
 use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellState, CellValue};
 
@@ -28,13 +28,17 @@ pub enum MineCount {
 pub struct Game {
     grid: Grid,
     cursor: PlaceI32,
+    origin: PlaceI32,
+    max_cursor_displacement: SizeI32,
 }
 
 impl Game {
-    pub fn new(grid: Grid) -> Game {
+    pub fn new(grid: Grid, max_cursor_displacement: SizeI32) -> Game {
         Game {
             grid,
             cursor: PlaceI32 { x: 0, y: 0 },
+            origin: PlaceI32 { x: 0, y: 0 },
+            max_cursor_displacement,
         }
     }
 
@@ -43,14 +47,43 @@ impl Game {
             Action::Flag           => self.toggle_flag(self.cursor),
             Action::Reveal         => self.reveal(self.cursor),
             Action::RevealAdjacent => self.reveal_adjacent(self.cursor),
-            Action::MoveCursor(direction) => {
-                match direction {
-                    Direction::Left   => self.cursor.x -= 1,
-                    Direction::Right  => self.cursor.x += 1,
-                    Direction::Down   => self.cursor.y -= 1,
-                    Direction::Up     => self.cursor.y += 1,
-                }
-            },
+            Action::MoveCursor(direction) => self.move_cursor(direction),
+        }
+    }
+
+    fn move_cursor(&mut self, direction: Direction) {
+        match direction {
+            Direction::Left   => self.cursor.x -= 1,
+            Direction::Right  => self.cursor.x += 1,
+            Direction::Down   => self.cursor.y -= 1,
+            Direction::Up     => self.cursor.y += 1,
+        };
+        
+        let cursor_displacement = (match direction {
+            Direction::Left   => self.cursor.x,
+            Direction::Right  => self.cursor.x,
+            Direction::Down   => self.cursor.y,
+            Direction::Up     => self.cursor.y,
+        }).abs_diff(match direction {
+            Direction::Left   => self.origin.x,
+            Direction::Right  => self.origin.x,
+            Direction::Down   => self.origin.y,
+            Direction::Up     => self.origin.y,
+        }) as i32;
+        let max_displacement = match direction {
+            Direction::Left   => self.max_cursor_displacement.width  / 2 + 1,
+            Direction::Right  => self.max_cursor_displacement.width  / 2,
+            Direction::Down   => self.max_cursor_displacement.height / 2 + 1,
+            Direction::Up     => self.max_cursor_displacement.height / 2,
+        };
+
+        if cursor_displacement > max_displacement {
+            match direction {
+                Direction::Left   => self.origin.x -= 1,
+                Direction::Right  => self.origin.x += 1,
+                Direction::Down   => self.origin.y -= 1,
+                Direction::Up     => self.origin.y += 1,
+            };
         }
     }
 
@@ -126,7 +159,7 @@ impl Game {
         View::new(
             &self.grid,
             size,
-            self.cursor,
+            self.origin,
             self.cursor,
         )
     }

@@ -1,6 +1,6 @@
 use crate::game::{Game, Action, Direction::*};
 use crate::grid::Grid;
-use crate::helper::SizeUsize;
+use crate::helper::{SizeI32, SizeUsize};
 use crate::io::input::Input;
 use std::io;
 use clap::Parser;
@@ -36,8 +36,15 @@ pub struct Io {
 impl Io {
     pub fn new() -> Io {
         let input = Input::parse();
+        let max_cursor_displacement = SizeI32 {
+            width:  input.width  as i32 - 6,
+            height: input.height as i32 - 6,
+        };
         Io {
-            game: Game::new(Grid::new(input.mine_concentration, input.seed)),
+            game: Game::new(
+                Grid::new(input.mine_concentration, input.seed),
+                max_cursor_displacement,
+            ),
             view_size: SizeUsize { width: input.width, height: input.height },
         }
     }
