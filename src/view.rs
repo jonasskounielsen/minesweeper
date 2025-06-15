@@ -1,3 +1,5 @@
+use crossterm::cursor;
+
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
 use crate::grid::Grid;
@@ -17,7 +19,7 @@ pub enum ViewCell {
 }
 
 impl ViewCell {
-    pub const fn char(&self) -> &str {
+    pub const fn char(&self) -> &'static str {
         match *self {
             ViewCell::Unrevealed => " ", ViewCell::One        => "1", ViewCell::Two        => "2",
             ViewCell::Flagged    => "+", ViewCell::Three      => "3", ViewCell::Four       => "4",
@@ -75,48 +77,86 @@ impl View {
         }
     }
 
+    // characters from https://en.wikipedia.org/wiki/Box-drawing_characters
+    const FAT_TOP_LEFT_CORNER:      &str = "┏";
+    const FAT_TOP_RIGHT_CORNER:     &str = "┓";
+    const FAT_BOTTOM_LEFT_CORNER:   &str = "┗";
+    const FAT_BOTTOM_RIGHT_CORNER:  &str = "┛";
+    const FAT_LEFT_BORDER:          &str = "┃";
+    const FAT_RIGHT_BORDER:         &str = "┃";
+    const FAT_TOP_BORDER:           &str = "━";
+    const FAT_BOTTOM_BORDER:        &str = "━";
+    const SLIM_TOP_LEFT_CORNER:     &str = "┌";
+    const SLIM_TOP_RIGHT_CORNER:    &str = "┐";
+    const SLIM_BOTTOM_LEFT_CORNER:  &str = "└";
+    const SLIM_BOTTOM_RIGHT_CORNER: &str = "┘";
+    const SLIM_LEFT_BORDER:         &str = "│";
+    const SLIM_RIGHT_BORDER:        &str = "│";
+    const SLIM_TOP_BORDER:          &str = "─";
+    const SLIM_BOTTOM_BORDER:       &str = "─";
+    const SPACE:                    &str = " ";
+
     pub fn render(&self) -> Vec<String> {
-        // characters from https://en.wikipedia.org/wiki/Box-drawing_characters
         let mut lines = Vec::new();
 
         let mut line = String::new(); 
-        line += "\u{250F}";
-        line += &"\u{2501}".repeat(self.size.width * 2 + 1);
-        line += "\u{2513}";
+        line +=  Self::FAT_TOP_LEFT_CORNER;
+        line += &Self::FAT_TOP_BORDER.repeat(self.size.width * 2 + 1);
+        line +=  Self::FAT_TOP_RIGHT_CORNER;
         lines.push(line);
 
         for y in (0..self.size.height).rev() {
             let mut line = String::new();
-            line += "\u{2503}";
-            line += " ";
-            for x in 0..self.size.width {
-                let place = PlaceUsize { x: x, y: y };
-                match &self.cursor {
-                    Some(cursor) if *cursor == place && Self::draw_cursor() => line += "_",
-                    _ => line += &self.matrix.get(place).char().to_string(),
-                }
-                line += " "; // terminal characters are approx. half a sqaure horizontally
+
+            line += Self::FAT_LEFT_BORDER;
+            for x in 0..(self.size.width * 2 + 1) {
+                let place = PlaceUsize { x, y };
+                line += self.get_character(place);
             }
-            line += "\u{2503}";
+            line += Self::FAT_RIGHT_BORDER;
             lines.push(line);
         }
 
         let mut line = String::new(); 
-        line += "\u{2517}";
-        line += &"\u{2501}".repeat(self.size.width * 2 + 1);
-        line += "\u{251B}";
+        line +=  Self::FAT_BOTTOM_LEFT_CORNER;
+        line += &Self::FAT_BOTTOM_BORDER.repeat(self.size.width * 2 + 1);
+        line +=  Self::FAT_BOTTOM_RIGHT_CORNER;
         lines.push(line);
 
         lines
     }
 
-    fn draw_cursor() -> bool {
-        let now = std::time::SystemTime::now();
-        let duration = now.duration_since(std::time::UNIX_EPOCH).unwrap();
-        if duration.as_secs() % 2 == 0 {
-            true
-        } else {
-            false
+    fn get_character(&self, place: PlaceUsize) -> &'static str {
+        if let Some(matrix_cursor) = &self.cursor {
+            let cursor = PlaceUsize {
+                x: matrix_cursor.x * 2 + 1,
+                y: matrix_cursor.y,
+            };
+            let (dist_x, dist_y) = (
+                place.x as i32 - cursor.x as i32,
+                place.y as i32 - cursor.y as i32,
+            );
+            match (dist_x, dist_y) {
+                (-1,  1) =>  return Self::SLIM_TOP_LEFT_CORNER,
+                ( 1,  1) =>  return Self::SLIM_TOP_RIGHT_CORNER,
+                (-1, -1) =>  return Self::SLIM_BOTTOM_LEFT_CORNER,
+                ( 1, -1) =>  return Self::SLIM_BOTTOM_RIGHT_CORNER,
+                (-1,  0) =>  return Self::SLIM_LEFT_BORDER,
+                ( 1,  0) =>  return Self::SLIM_RIGHT_BORDER,
+                // top/bottom border would overwrite adjacent cells
+                _ => (),
+            }
         }
+
+        if place.x % 2 != 1 {
+            return Self::SPACE;
+        };
+
+        let matrix_place = PlaceUsize {
+            x: (place.x - 1) / 2,
+            y: place.y
+        };
+
+        self.matrix.get(matrix_place).char()
     }
 }
