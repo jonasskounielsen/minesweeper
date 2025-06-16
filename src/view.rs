@@ -41,7 +41,8 @@ impl ViewCell {
 pub struct View {
     matrix: Matrix<ViewCell>,
     size: SizeUsize,
-    cursor: Option<PlaceUsize>,
+    matrix_cursor: PlaceUsize,
+    game_cursor: PlaceI32,
     revealed_cell_count: u32,
     start_instant: time::Instant,
 }
@@ -49,7 +50,7 @@ pub struct View {
 impl View {
     pub fn new(
         grid: &Grid,      size: SizeUsize,
-        origin: PlaceI32, cursor: PlaceI32,
+        origin: PlaceI32, game_cursor: PlaceI32,
         show_mines: bool, revealed_cell_count: u32,
         start_instant: time::Instant,
     ) -> View {
@@ -63,16 +64,15 @@ impl View {
                 Self::get_view_cell(grid, cell_position, show_mines)
             },
         );
-        let cursor = if cursor.within(origin, size.into()) {
-            Some(PlaceUsize {
-                x: (cursor.x + size.width  as i32 / 2 - origin.x) as usize,
-                y: (cursor.y + size.height as i32 / 2 - origin.y) as usize,
-            })
-        } else { None };
+        let matrix_cursor = PlaceUsize {
+            x: (game_cursor.x + size.width  as i32 / 2 - origin.x) as usize,
+            y: (game_cursor.y + size.height as i32 / 2 - origin.y) as usize,
+        };
         View {
             matrix,
             size,
-            cursor,
+            matrix_cursor,
+            game_cursor,
             revealed_cell_count,
             start_instant,
         }
@@ -166,29 +166,36 @@ impl View {
         line +=  Self::FAT_BOTTOM_RIGHT_CORNER;
         lines.push(line);
 
+        let mut line = String::new(); 
+        line += &format!(
+            "{:^pad_dist$}",
+            format!("({:>2}, {:>2})", self.game_cursor.x, self.game_cursor.y),
+            pad_dist = self.size.width * 2 + 3,
+        );
+        lines.push(line);
+
         lines
     }
 
     fn get_character(&self, place: PlaceUsize) -> &'static str {
-        if let Some(matrix_cursor) = &self.cursor {
-            let cursor = PlaceUsize {
-                x: matrix_cursor.x * 2 + 1,
-                y: matrix_cursor.y,
-            };
-            let (dist_x, dist_y) = (
-                place.x as i32 - cursor.x as i32,
-                place.y as i32 - cursor.y as i32,
-            );
-            match (dist_x, dist_y) {
-                (-1,  1) =>  return Self::SLIM_TOP_LEFT_CORNER,
-                ( 1,  1) =>  return Self::SLIM_TOP_RIGHT_CORNER,
-                (-1, -1) =>  return Self::SLIM_BOTTOM_LEFT_CORNER,
-                ( 1, -1) =>  return Self::SLIM_BOTTOM_RIGHT_CORNER,
-                (-1,  0) =>  return Self::SLIM_LEFT_BORDER,
-                ( 1,  0) =>  return Self::SLIM_RIGHT_BORDER,
-                // top/bottom border would overwrite adjacent cells
-                _ => (),
-            }
+        let matrix_cursor = self.matrix_cursor;
+        let cursor = PlaceUsize {
+            x: matrix_cursor.x * 2 + 1,
+            y: matrix_cursor.y,
+        };
+        let (dist_x, dist_y) = (
+            place.x as i32 - cursor.x as i32,
+            place.y as i32 - cursor.y as i32,
+        );
+        match (dist_x, dist_y) {
+            (-1,  1) =>  return Self::SLIM_TOP_LEFT_CORNER,
+            ( 1,  1) =>  return Self::SLIM_TOP_RIGHT_CORNER,
+            (-1, -1) =>  return Self::SLIM_BOTTOM_LEFT_CORNER,
+            ( 1, -1) =>  return Self::SLIM_BOTTOM_RIGHT_CORNER,
+            (-1,  0) =>  return Self::SLIM_LEFT_BORDER,
+            ( 1,  0) =>  return Self::SLIM_RIGHT_BORDER,
+            // top/bottom border would overwrite adjacent cells
+            _ => (),
         }
 
         if place.x % 2 != 1 {

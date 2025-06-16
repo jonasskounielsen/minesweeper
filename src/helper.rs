@@ -17,14 +17,14 @@ impl PlaceI32 {
         )
     }
 
-    pub fn within(&self, place: PlaceI32, area: SizeI32) -> bool {
-        if ((place.x - area.width  / 2)..(place.x + area.width  / 2)).contains(&self.x) &&
-           ((place.y - area.height / 2)..(place.y + area.height / 2)).contains(&self.y) {
-            true
-        } else {
-            false
-        }
-    }
+    // pub fn within(&self, place: PlaceI32, area: SizeI32) -> bool {
+    //     if ((place.x - area.width  / 2)..(place.x + area.width  / 2)).contains(&self.x) &&
+    //        ((place.y - area.height / 2)..(place.y + area.height / 2)).contains(&self.y) {
+    //         true
+    //     } else {
+    //         false
+    //     }
+    // }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -33,7 +33,7 @@ pub struct SizeI32 {
     pub height: i32,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PlaceUsize {
     pub x: usize,
     pub y: usize,
