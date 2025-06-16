@@ -8,6 +8,7 @@ pub enum Action {
     Reveal,
     Flag,
     RevealAdjacent,
+    Reset,
 }
 
 pub enum  Direction {
@@ -24,30 +25,44 @@ pub enum MineCount {
     Five, Six, Seven, Eight,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum GameState {
+    Underway,
+    Lost,
+}
+
 #[derive(Debug)]
 pub struct Game {
+    state: GameState,
     grid: Grid,
     cursor: PlaceI32,
     origin: PlaceI32,
+    mine_concentration: f64,
+    seed: u64,
     max_cursor_displacement: SizeI32,
 }
 
 impl Game {
-    pub fn new(grid: Grid, max_cursor_displacement: SizeI32) -> Game {
+    pub fn new(mine_concentration: f64, seed: u64, max_cursor_displacement: SizeI32) -> Game {
         Game {
-            grid,
+            state: GameState::Underway,
+            grid: Grid::new(mine_concentration, seed),
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
+            mine_concentration,
+            seed,
             max_cursor_displacement,
         }
     }
 
     pub fn action(&mut self, action: Action) {
-        match action {
-            Action::Flag           => self.toggle_flag(self.cursor),
-            Action::Reveal         => self.reveal(self.cursor),
-            Action::RevealAdjacent => self.reveal_adjacent(self.cursor),
-            Action::MoveCursor(direction) => self.move_cursor(direction),
+        match (self.state, action) {
+            (GameState::Underway, Action::Flag)           => self.toggle_flag(self.cursor),
+            (GameState::Underway, Action::Reveal)         => self.reveal(self.cursor),
+            (GameState::Underway, Action::RevealAdjacent) => self.reveal_adjacent(self.cursor),
+            (_,                   Action::MoveCursor(direction)) => self.move_cursor(direction),
+            (_,                   Action::Reset) => self.reset(),
+            _ => (),
         }
     }
 
@@ -130,6 +145,18 @@ impl Game {
                 self.reveal(place);
             }
         }
+    }
+
+    fn reset(&mut self) {
+        *self = Game {
+            state: GameState::Underway,
+            grid: Grid::new(self.mine_concentration, self.seed),
+            cursor: PlaceI32 { x: 0, y: 0 },
+            origin: PlaceI32 { x: 0, y: 0 },
+            mine_concentration:      self.mine_concentration,
+            seed:                    self.seed,
+            max_cursor_displacement: self.max_cursor_displacement,
+        };
     }
 
     pub fn mine_count(grid: &Grid, place: PlaceI32) -> MineCount {

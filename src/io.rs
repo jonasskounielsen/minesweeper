@@ -42,7 +42,8 @@ impl Io {
         };
         Io {
             game: Game::new(
-                Grid::new(input.mine_concentration, input.seed),
+                input.mine_concentration,
+                input.seed,
                 max_cursor_displacement,
             ),
             view_size: SizeUsize { width: input.width, height: input.height },
@@ -84,6 +85,8 @@ impl Io {
             KeyCode::Enter     => Action::Reveal,
             KeyCode::Backspace => Action::RevealAdjacent,
             KeyCode::Char(' ') => Action::Flag,
+
+            KeyCode::Char('r') => Action::Reset,
             _ => return,
         };
         self.game.action(action);

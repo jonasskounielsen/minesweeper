@@ -20,7 +20,7 @@ pub enum ViewCell {
 
 impl ViewCell {
     pub const fn char(&self) -> &'static str {
-        match *self {
+        match self {
             ViewCell::Unrevealed => " ", ViewCell::One        => "1", ViewCell::Two        => "2",
             ViewCell::Flagged    => "+", ViewCell::Three      => "3", ViewCell::Four       => "4",
             ViewCell::Clear      => "0", ViewCell::Five       => "5", ViewCell::Six        => "6",
@@ -92,8 +92,8 @@ impl View {
     const SLIM_BOTTOM_RIGHT_CORNER: &str = "┘";
     const SLIM_LEFT_BORDER:         &str = "│";
     const SLIM_RIGHT_BORDER:        &str = "│";
-    const SLIM_TOP_BORDER:          &str = "─";
-    const SLIM_BOTTOM_BORDER:       &str = "─";
+    // const SLIM_TOP_BORDER:          &str = "─";
+    // const SLIM_BOTTOM_BORDER:       &str = "─";
     const SPACE:                    &str = " ";
 
     pub fn render(&self) -> Vec<String> {

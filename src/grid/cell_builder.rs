@@ -34,8 +34,7 @@ impl CellBuilder {
         } else {
             CellValue::Empty
         };
-        let mut cell = Cell::new(value);
-        cell.reveal();
+        let cell = Cell::new(value);
         cell
     }
 }
