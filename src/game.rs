@@ -37,6 +37,7 @@ pub struct Game {
     grid: Grid,
     cursor: PlaceI32,
     origin: PlaceI32,
+    revealed_cell_count: u32,
     mine_concentration: f64,
     seed: u64,
     max_cursor_displacement: SizeI32,
@@ -49,6 +50,7 @@ impl Game {
             grid: Grid::new(mine_concentration, seed),
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
+            revealed_cell_count: 0,
             mine_concentration,
             seed,
             max_cursor_displacement,
@@ -124,6 +126,7 @@ impl Game {
             self.state = GameState::Lost;
             return;
         }
+        self.revealed_cell_count += 1;
 
         let MineCount::Zero = Self::mine_count(&self.grid, place) else { return; };
 
@@ -161,6 +164,7 @@ impl Game {
             grid: Grid::new(self.mine_concentration, self.seed),
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
+            revealed_cell_count: 0,
             mine_concentration:      self.mine_concentration,
             seed:                    self.seed,
             max_cursor_displacement: self.max_cursor_displacement,
@@ -198,6 +202,7 @@ impl Game {
             self.origin,
             self.cursor,
             show_mines,
+            self.revealed_cell_count,
         )
     }
 }

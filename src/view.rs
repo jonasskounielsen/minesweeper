@@ -40,10 +40,15 @@ pub struct View {
     matrix: Matrix<ViewCell>,
     size: SizeUsize,
     cursor: Option<PlaceUsize>,
+    revealed_cell_count: u32,
 }
 
 impl View {
-    pub fn new(grid: &Grid, size: SizeUsize, origin: PlaceI32, cursor: PlaceI32, show_mines: bool) -> View {
+    pub fn new(
+        grid: &Grid,      size: SizeUsize,
+        origin: PlaceI32, cursor: PlaceI32,
+        show_mines: bool, revealed_cell_count: u32,
+    ) -> View {
         let matrix = Matrix::new(
             size,
             |relative: PlaceUsize| {
@@ -64,6 +69,7 @@ impl View {
             matrix,
             size,
             cursor,
+            revealed_cell_count,
         }
     }
 
@@ -112,6 +118,14 @@ impl View {
 
     pub fn render(&self) -> Vec<String> {
         let mut lines = Vec::new();
+
+        let mut line = String::new(); 
+        line += &format!(
+            "SCORE: {:<pad_dist$}",
+            self.revealed_cell_count.to_string(),
+            pad_dist = self.size.width * 2 + 3,
+        );
+        lines.push(line);
 
         let mut line = String::new(); 
         line +=  Self::FAT_TOP_LEFT_CORNER;

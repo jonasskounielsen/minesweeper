@@ -62,8 +62,9 @@ impl Io {
                 buffer.execute(MoveTo(0, i as u16))?;
                 buffer.execute(Print(line))?;
             }
+            
 
-            match dbg!(read())? {
+            match read()? {
                 crossterm::event::Event::Key(key_event) => {
                     if key_event.modifiers == event::KeyModifiers::NONE &&
                        key_event.kind == event::KeyEventKind::Press {
