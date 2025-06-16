@@ -74,17 +74,21 @@ impl Game {
             Direction::Up     => self.cursor.y += 1,
         };
         
-        let cursor_displacement = (match direction {
-            Direction::Left   => self.cursor.x,
-            Direction::Right  => self.cursor.x,
-            Direction::Down   => self.cursor.y,
-            Direction::Up     => self.cursor.y,
-        }).abs_diff(match direction {
-            Direction::Left   => self.origin.x,
-            Direction::Right  => self.origin.x,
-            Direction::Down   => self.origin.y,
-            Direction::Up     => self.origin.y,
-        }) as i32;
+        let cursor_displacement = i32::abs_diff(
+            match direction {
+                Direction::Left   => self.cursor.x,
+                Direction::Right  => self.cursor.x,
+                Direction::Down   => self.cursor.y,
+                Direction::Up     => self.cursor.y,
+            },
+            match direction {
+                Direction::Left   => self.origin.x,
+                Direction::Right  => self.origin.x,
+                Direction::Down   => self.origin.y,
+                Direction::Up     => self.origin.y,
+            }
+        ) as i32;
+
         let max_displacement = match direction {
             Direction::Left   => self.max_cursor_displacement.width  / 2 + 1,
             Direction::Right  => self.max_cursor_displacement.width  / 2,
@@ -116,8 +120,12 @@ impl Game {
         
         self.grid.get_mut(place).reveal();
         
+        if let CellValue::Mine = self.grid.get(place).value {
+            self.state = GameState::Lost;
+            return;
+        }
+
         let MineCount::Zero = Self::mine_count(&self.grid, place) else { return; };
-        let CellValue::Empty = self.grid.get(place).value else { return; };
 
         for i in -1..=1 {
             for j in -1..=1 {
@@ -183,11 +191,13 @@ impl Game {
     }
 
     pub fn view(&self, size: SizeUsize) -> View {
+        let show_mines = if let GameState::Lost = self.state { true } else { false };
         View::new(
             &self.grid,
             size,
             self.origin,
             self.cursor,
+            show_mines,
         )
     }
 }

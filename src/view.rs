@@ -14,6 +14,7 @@ pub enum ViewCell {
     Flagged,
     Clear,
     Mine,
+    IncorrectFlag,
     One, Two, Three, Four,
     Five, Six, Seven, Eight,
 }
@@ -21,10 +22,15 @@ pub enum ViewCell {
 impl ViewCell {
     pub const fn char(&self) -> &'static str {
         match self {
-            ViewCell::Unrevealed => " ", ViewCell::One        => "1", ViewCell::Two        => "2",
-            ViewCell::Flagged    => "+", ViewCell::Three      => "3", ViewCell::Four       => "4",
-            ViewCell::Clear      => "0", ViewCell::Five       => "5", ViewCell::Six        => "6",
-            ViewCell::Mine       => "*", ViewCell::Seven      => "7", ViewCell::Eight      => "8",
+            ViewCell::Unrevealed    => " ",
+            ViewCell::Flagged       => "+",
+            ViewCell::Clear         => "0",
+            ViewCell::Mine          => "*",
+            ViewCell::IncorrectFlag => "X",
+            ViewCell::One        => "1", ViewCell::Two        => "2",
+            ViewCell::Three      => "3", ViewCell::Four       => "4",
+            ViewCell::Five       => "5", ViewCell::Six        => "6",
+            ViewCell::Seven      => "7", ViewCell::Eight      => "8",
         }
     }
 }
@@ -37,7 +43,7 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(grid: &Grid, size: SizeUsize, origin: PlaceI32, cursor: PlaceI32) -> View {
+    pub fn new(grid: &Grid, size: SizeUsize, origin: PlaceI32, cursor: PlaceI32, show_mines: bool) -> View {
         let matrix = Matrix::new(
             size,
             |relative: PlaceUsize| {
@@ -45,7 +51,7 @@ impl View {
                     x: origin.x - size.width  as i32 / 2 + relative.x as i32,
                     y: origin.y - size.height as i32 / 2 + relative.y as i32,
                 };
-                Self::get_view_cell(grid, cell_position)
+                Self::get_view_cell(grid, cell_position, show_mines)
             },
         );
         let cursor = if cursor.within(origin, size.into()) {
@@ -57,13 +63,21 @@ impl View {
         View {
             matrix,
             size,
-            cursor: cursor,
+            cursor,
         }
     }
 
-    fn get_view_cell(grid: &Grid, place: PlaceI32) -> ViewCell {
+    fn get_view_cell(grid: &Grid, place: PlaceI32, show_mines: bool) -> ViewCell {
         let cell = grid.get(place);
         match *cell {
+            Cell {
+                state: CellState::Hidden,
+                value: CellValue::Mine,
+            } if show_mines => ViewCell::Mine,
+            Cell {
+                state: CellState::Flagged,
+                value: CellValue::Mine,
+            } if show_mines => ViewCell::IncorrectFlag,
             Cell { state: CellState::Hidden,  .. } => ViewCell::Unrevealed,
             Cell { state: CellState::Flagged, .. } => ViewCell::Flagged,
             Cell { value: CellValue::Mine,    .. } => ViewCell::Mine,
