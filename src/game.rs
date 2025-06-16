@@ -2,6 +2,7 @@ use crate::view::View;
 use crate::helper::{PlaceI32, SizeI32, SizeUsize};
 use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellState, CellValue};
+use std::time;
 
 pub enum Action {
     MoveCursor(Direction),
@@ -38,6 +39,7 @@ pub struct Game {
     cursor: PlaceI32,
     origin: PlaceI32,
     revealed_cell_count: u32,
+    start_instant: time::Instant,
     mine_concentration: f64,
     seed: u64,
     max_cursor_displacement: SizeI32,
@@ -51,6 +53,7 @@ impl Game {
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
+            start_instant: time::Instant::now(),
             mine_concentration,
             seed,
             max_cursor_displacement,
@@ -165,6 +168,7 @@ impl Game {
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
+            start_instant: time::Instant::now(),
             mine_concentration:      self.mine_concentration,
             seed:                    self.seed,
             max_cursor_displacement: self.max_cursor_displacement,
@@ -197,12 +201,10 @@ impl Game {
     pub fn view(&self, size: SizeUsize) -> View {
         let show_mines = if let GameState::Lost = self.state { true } else { false };
         View::new(
-            &self.grid,
-            size,
-            self.origin,
-            self.cursor,
-            show_mines,
-            self.revealed_cell_count,
+            &self.grid,  size,
+            self.origin, self.cursor,
+            show_mines,  self.revealed_cell_count,
+            self.start_instant,
         )
     }
 }

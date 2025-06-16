@@ -1,3 +1,5 @@
+use std::time;
+
 use crossterm::cursor;
 
 use crate::grid::cell::{Cell, CellState, CellValue};
@@ -41,6 +43,7 @@ pub struct View {
     size: SizeUsize,
     cursor: Option<PlaceUsize>,
     revealed_cell_count: u32,
+    start_instant: time::Instant,
 }
 
 impl View {
@@ -48,6 +51,7 @@ impl View {
         grid: &Grid,      size: SizeUsize,
         origin: PlaceI32, cursor: PlaceI32,
         show_mines: bool, revealed_cell_count: u32,
+        start_instant: time::Instant,
     ) -> View {
         let matrix = Matrix::new(
             size,
@@ -70,6 +74,7 @@ impl View {
             size,
             cursor,
             revealed_cell_count,
+            start_instant,
         }
     }
 
@@ -121,9 +126,19 @@ impl View {
 
         let mut line = String::new(); 
         line += &format!(
-            "SCORE: {:<pad_dist$}",
+            "{:<pad_dist$}{}",
+            "SCORE",
+            "TIME",
+            pad_dist = self.size.width * 2 - 1,
+        );
+        lines.push(line);
+
+        let mut line = String::new(); 
+        let time = self.start_instant.elapsed().as_secs();
+        line += &format!(
+            "{:<pad_dist$}{time}",
             self.revealed_cell_count.to_string(),
-            pad_dist = self.size.width * 2 + 3,
+            pad_dist = self.size.width * 2 + 3 - time.to_string().len(),
         );
         lines.push(line);
 
