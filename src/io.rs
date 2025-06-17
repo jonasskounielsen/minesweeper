@@ -1,8 +1,8 @@
 use crate::game::{Game, Action, Direction::*};
-use crate::grid::Grid;
 use crate::helper::{SizeI32, SizeUsize};
 use crate::io::input::Input;
-use std::io;
+use std::time::Duration;
+use std::{io, thread, sync::mpsc};
 use clap::Parser;
 use crossterm::{
     event::{
@@ -25,7 +25,12 @@ use crossterm::{
     ExecutableCommand,
 };
 
-mod input; 
+mod input;
+
+enum Event {
+    Key(KeyEvent),
+    Second,
+}
 
 #[derive(Debug)]
 pub struct Io {
@@ -51,6 +56,27 @@ impl Io {
     }
 
     pub fn run(&mut self, mut buffer: impl io::Write) -> io::Result<()> {
+        let (tx, rx) = mpsc::channel();
+
+        let tx_key = tx.clone();
+        thread::spawn(move || -> io::Result<()> {
+            loop {
+                if let event::Event::Key(key_event) = read()? {
+                    tx_key.send(Event::Key(key_event)).unwrap();
+                }
+            }
+        });
+
+        let tx_time = tx;
+        let initial_wait = self.game.time_until_timer_update();
+        thread::spawn(move || {
+            thread::sleep(initial_wait);
+            loop {
+                thread::sleep(Duration::from_secs(1));
+                tx_time.send(Event::Second).unwrap();
+            }
+        });
+
         //buffer.execute(EnterAlternateScreen)?;
         enable_raw_mode()?;
         loop {
@@ -64,19 +90,18 @@ impl Io {
             }
             
 
-            match read()? {
-                crossterm::event::Event::Key(key_event) => {
-                    if key_event.modifiers == event::KeyModifiers::NONE &&
-                       key_event.kind == event::KeyEventKind::Press {
-                        self.parse_key(key_event);
-                    }
-                },
-                _ => (),
+            match rx.recv().unwrap() {
+                Event::Key(key_event) => self.parse_key(key_event),
+                Event::Second => (), // update display when timer increments
             }
         }
     }
 
     fn parse_key(&mut self, key: KeyEvent) {
+        if key.modifiers != event::KeyModifiers::NONE ||
+           key.kind != event::KeyEventKind::Press {
+
+        }
         let action = match key.code {
             KeyCode::Left      => Action::MoveCursor(Left),
             KeyCode::Right     => Action::MoveCursor(Right),

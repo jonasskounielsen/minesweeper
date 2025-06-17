@@ -2,7 +2,7 @@ use crate::view::View;
 use crate::helper::{PlaceI32, SizeI32, SizeUsize};
 use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellState, CellValue};
-use std::time;
+use std::time::{self, Duration};
 
 pub enum Action {
     MoveCursor(Direction),
@@ -196,6 +196,13 @@ impl Game {
             7 => MineCount::Seven, 8 => MineCount::Eight,
             _ => unreachable!(), // we only check 8 tiles
         }
+    }
+
+    pub fn time_until_timer_update(&self) -> time::Duration {
+        let elapsed = self.start_instant.elapsed();
+        let second = Duration::from_secs(1);
+        let remainder = Duration::from_nanos(elapsed.subsec_nanos() as u64);
+        second - remainder
     }
 
     pub fn view(&self, size: SizeUsize) -> View {
