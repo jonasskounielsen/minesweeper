@@ -1,7 +1,7 @@
 use crate::game::{Game, Action, Direction::*};
 use crate::helper::{SizeI32, SizeUsize};
 use crate::io::input::Input;
-use std::time::Duration;
+use std::time::{self, Duration};
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
 use crossterm::{
@@ -68,11 +68,9 @@ impl Io {
         });
 
         let tx_time = tx;
-        let initial_wait = self.game.time_until_timer_update();
         thread::spawn(move || {
-            thread::sleep(initial_wait);
             loop {
-                thread::sleep(Duration::from_secs(1));
+                thread::sleep(Game::time_until_timer_update());
                 tx_time.send(Event::Second).unwrap();
             }
         });

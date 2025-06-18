@@ -198,8 +198,10 @@ impl Game {
         }
     }
 
-    pub fn time_until_timer_update(&self) -> time::Duration {
-        let elapsed = self.start_instant.elapsed();
+    pub fn time_until_timer_update() -> time::Duration {
+        let elapsed = time::SystemTime::now()
+            .duration_since(time::UNIX_EPOCH)
+            .expect("failed to get system time");
         let second = Duration::from_secs(1);
         let remainder = Duration::from_nanos(elapsed.subsec_nanos() as u64);
         second - remainder

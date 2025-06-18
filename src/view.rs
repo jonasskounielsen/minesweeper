@@ -1,7 +1,5 @@
 use std::time;
 
-use crossterm::cursor;
-
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
 use crate::grid::Grid;
