@@ -166,9 +166,10 @@ impl View {
 
         let mut line = String::new(); 
         line += &format!(
-            "{:^pad_dist$}",
-            format!("({:>2}, {:>2})", self.game_cursor.x, self.game_cursor.y),
-            pad_dist = self.size.width * 2 + 3,
+            "{:>pad_dist$},{:<pad_dist$}",
+            format!("({}", self.game_cursor.x),
+            format!("{})", self.game_cursor.y),
+            pad_dist = self.size.width + 1,
         );
         lines.push(line);
 
