@@ -1,4 +1,4 @@
-use rand::{Rng, rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
 
 use super::{PlaceI32, Cell, CellValue};
 
@@ -14,10 +14,10 @@ impl CellBuilder {
         seed: 0,
     };
 
-    pub fn new(mine_concentration: f64, seed: u64) -> CellBuilder {
+    pub fn new(mine_concentration: f64, seed: Option<u64>) -> CellBuilder {
         CellBuilder {
             mine_concentration,
-            seed,
+            seed: seed.unwrap_or_else(|| Self::get_random_seed()),
         }
     }
 
@@ -36,5 +36,11 @@ impl CellBuilder {
         };
         let cell = Cell::new(value);
         cell
+    }
+
+    fn get_random_seed() -> u64 {
+        let mut rng = StdRng::from_os_rng();
+        rng.next_u64()
+        // ;0xDEADBEEF
     }
 }

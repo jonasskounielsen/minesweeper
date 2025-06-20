@@ -14,7 +14,7 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn new(mine_concentration: f64, seed: u64) -> Grid {
+    pub fn new(mine_concentration: f64, seed: Option<u64>) -> Grid {
         Self {
             tile: RefCell::new(
                 Tile::new(1, CellBuilder::new(mine_concentration, seed)),

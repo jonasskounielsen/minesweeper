@@ -41,12 +41,12 @@ pub struct Game {
     revealed_cell_count: u32,
     start_instant: time::Instant,
     mine_concentration: f64,
-    seed: u64,
+    seed: Option<u64>,
     max_cursor_displacement: SizeI32,
 }
 
 impl Game {
-    pub fn new(mine_concentration: f64, seed: u64, max_cursor_displacement: SizeI32) -> Game {
+    pub fn new(mine_concentration: f64, seed: Option<u64>, max_cursor_displacement: SizeI32) -> Game {
         Game {
             state: GameState::Underway,
             grid: Grid::new(mine_concentration, seed),
