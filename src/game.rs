@@ -100,6 +100,7 @@ impl Game {
             Direction::Down   => self.max_cursor_displacement.height / 2 + 1,
             Direction::Up     => self.max_cursor_displacement.height / 2,
         };
+        dbg!(cursor_displacement, max_displacement);
 
         if cursor_displacement > max_displacement {
             match direction {

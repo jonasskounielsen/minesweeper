@@ -1,15 +1,18 @@
 use crate::game::{Game, Action, Direction::*};
 use crate::helper::{SizeI32, SizeUsize};
 use crate::io::input::Input;
+use crate::view::View;
 use std::time::{self, Duration};
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
+use crossterm::terminal;
 use crossterm::{
     event::{
         self,
         read,
         KeyEvent,
         KeyCode,
+        Event,
     },
     style::Print,
     terminal::{
@@ -27,23 +30,29 @@ use crossterm::{
 
 mod input;
 
-enum Event {
-    Key(KeyEvent),
+enum IoEvent {
+    CrosstermEvent(crossterm::event::Event),
     Second,
 }
 
 #[derive(Debug)]
 pub struct Io {
     game: Game,
-    view_size: SizeUsize,
+    window_size: SizeUsize,
 }
 
 impl Io {
     pub fn new() -> Io {
         let input = Input::parse();
+        let window_size = terminal::window_size().expect("failed to get terminal size");
+        let window_size = SizeUsize {
+            width:  window_size.columns as usize,
+            height: window_size.rows    as usize,
+        };
+        let matrix_size = View::matrix_size(window_size);
         let max_cursor_displacement = SizeI32 {
-            width:  input.width  as i32 - 6,
-            height: input.height as i32 - 6,
+            width:  matrix_size.width  as i32 - 6,
+            height: matrix_size.height as i32 - 6,
         };
         Io {
             game: Game::new(
@@ -51,7 +60,7 @@ impl Io {
                 input.seed,
                 max_cursor_displacement,
             ),
-            view_size: SizeUsize { width: input.width, height: input.height },
+            window_size,
         }
     }
 
@@ -61,9 +70,7 @@ impl Io {
         let tx_key = tx.clone();
         thread::spawn(move || -> io::Result<()> {
             loop {
-                if let event::Event::Key(key_event) = read()? {
-                    tx_key.send(Event::Key(key_event)).unwrap();
-                }
+                tx_key.send(IoEvent::CrosstermEvent(read()?));
             }
         });
 
@@ -71,7 +78,7 @@ impl Io {
         thread::spawn(move || {
             loop {
                 thread::sleep(Game::time_until_timer_update());
-                tx_time.send(Event::Second).unwrap();
+                tx_time.send(IoEvent::Second).unwrap();
             }
         });
 
@@ -80,7 +87,7 @@ impl Io {
         loop {
             buffer.execute(Clear(All))?;
 
-            let view = self.game.view(self.view_size);
+            let view = self.game.view(self.window_size);
 
             for (i, line) in view.render().iter().enumerate() {
                 buffer.execute(MoveTo(0, i as u16))?;
@@ -89,9 +96,22 @@ impl Io {
             
 
             match rx.recv().unwrap() {
-                Event::Key(key_event) => self.parse_key(key_event),
-                Event::Second => (), // update display when timer increments
+                IoEvent::CrosstermEvent(event) => self.parse_event(event),
+                IoEvent::Second => (), // update display when timer increments
             }
+        }
+    }
+
+    fn parse_event(&mut self, event: event::Event) {
+        match event {
+            Event::Key(key_event)  => self.parse_key   (key_event),
+            Event::Resize(new_width, new_height) => {
+                self.window_size = SizeUsize {
+                    width:  new_width  as usize,
+                    height: new_height as usize,
+                }
+            },
+            _ => (),
         }
     }
 

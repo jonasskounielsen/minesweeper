@@ -38,7 +38,7 @@ impl ViewCell {
 #[derive(Debug)]
 pub struct View {
     matrix: Matrix<ViewCell>,
-    size: SizeUsize,
+    window_size: SizeUsize,
     matrix_cursor: PlaceUsize,
     game_cursor: PlaceI32,
     revealed_cell_count: u32,
@@ -47,28 +47,31 @@ pub struct View {
 
 impl View {
     pub fn new(
-        grid: &Grid,      size: SizeUsize,
+        grid: &Grid,      window_size: SizeUsize,
         origin: PlaceI32, game_cursor: PlaceI32,
         show_mines: bool, revealed_cell_count: u32,
         start_instant: time::Instant,
     ) -> View {
+        let matrix_size = Self::matrix_size(window_size);
         let matrix = Matrix::new(
-            size,
+            matrix_size,
             |relative: PlaceUsize| {
                 let cell_position = PlaceI32 {
-                    x: origin.x - size.width  as i32 / 2 + relative.x as i32,
-                    y: origin.y - size.height as i32 / 2 + relative.y as i32,
+                    x: origin.x - matrix_size.width  as i32 / 2 + relative.x as i32,
+                    y: origin.y - matrix_size.height as i32 / 2 + relative.y as i32,
                 };
                 Self::get_view_cell(grid, cell_position, show_mines)
             },
         );
         let matrix_cursor = PlaceUsize {
-            x: (game_cursor.x + size.width  as i32 / 2 - origin.x) as usize,
-            y: (game_cursor.y + size.height as i32 / 2 - origin.y) as usize,
+            x: (game_cursor.x + matrix_size.width  as i32 / 2 - origin.x) as usize,
+            y: (game_cursor.y + matrix_size.height as i32 / 2 - origin.y) as usize,
         };
+        dbg!(origin, game_cursor, matrix_size, window_size, matrix_cursor);
+        // dbg!(vec![0; 1][2]);
         View {
             matrix,
-            size,
+            window_size,
             matrix_cursor,
             game_cursor,
             revealed_cell_count,
@@ -127,7 +130,7 @@ impl View {
             "{:<pad_dist$}{}",
             "SCORE",
             "TIME",
-            pad_dist = self.size.width * 2 - 1,
+            pad_dist = self.window_size.width - "TIME".len(),
         );
         lines.push(line);
 
@@ -136,21 +139,21 @@ impl View {
         line += &format!(
             "{:<pad_dist$}{time}",
             self.revealed_cell_count.to_string(),
-            pad_dist = self.size.width * 2 + 3 - time.to_string().len(),
+            pad_dist = self.window_size.width - time.to_string().len(),
         );
         lines.push(line);
 
         let mut line = String::new(); 
         line +=  Self::FAT_TOP_LEFT_CORNER;
-        line += &Self::FAT_TOP_BORDER.repeat(self.size.width * 2 + 1);
+        line += &Self::FAT_TOP_BORDER.repeat(self.window_size.width - 2);
         line +=  Self::FAT_TOP_RIGHT_CORNER;
         lines.push(line);
 
-        for y in (0..self.size.height).rev() {
+        for y in (0..self.matrix.size.height).rev() {
             let mut line = String::new();
 
             line += Self::FAT_LEFT_BORDER;
-            for x in 0..(self.size.width * 2 + 1) {
+            for x in 0..(self.window_size.width - 2) {
                 let place = PlaceUsize { x, y };
                 line += self.get_character(place);
             }
@@ -160,7 +163,7 @@ impl View {
 
         let mut line = String::new(); 
         line +=  Self::FAT_BOTTOM_LEFT_CORNER;
-        line += &Self::FAT_BOTTOM_BORDER.repeat(self.size.width * 2 + 1);
+        line += &Self::FAT_BOTTOM_BORDER.repeat(self.window_size.width - 2);
         line +=  Self::FAT_BOTTOM_RIGHT_CORNER;
         lines.push(line);
 
@@ -169,7 +172,7 @@ impl View {
             "{:>pad_dist$},{:<pad_dist$}",
             format!("({}", self.game_cursor.x),
             format!("{})", self.game_cursor.y),
-            pad_dist = self.size.width + 1,
+            pad_dist = self.window_size.width / 2 - 1,
         );
         lines.push(line);
 
@@ -199,7 +202,7 @@ impl View {
 
         if place.x % 2 != 1 {
             return Self::SPACE;
-        };
+        }
 
         let matrix_place = PlaceUsize {
             x: (place.x - 1) / 2,
@@ -207,5 +210,12 @@ impl View {
         };
 
         self.matrix.get(matrix_place).char()
+    }
+
+    pub fn matrix_size(window_size: SizeUsize) -> SizeUsize {
+        SizeUsize {
+            width: (window_size.width - 2) / 2,
+            height: window_size.height - 5,
+        }
     }
 }

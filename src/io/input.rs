@@ -8,21 +8,11 @@ pub struct Input {
     #[arg(name = "mine-concentration", short, long, default_value_t = Self::DEFAULT_MINE_CONCENTRATION)]
     pub mine_concentration: f64,
     
-    /// seed for the world generator
+    /// seed for the world generator (defaults to random)
     #[arg(short, long, hide_default_value = true)]
     pub seed: Option<u64>,
-    
-    /// width of the visible grid
-    #[arg(short = 'W', long, default_value_t = Self::DEFAULT_WIDTH)]
-    pub width:  usize,
-    
-    /// height of the visible grid
-    #[arg(short = 'H', long, default_value_t = Self::DEFAULT_HEIGHT)]
-    pub height: usize,
 }
 
 impl Input {
     pub const DEFAULT_MINE_CONCENTRATION: f64 = 0.2f64;
-    pub const DEFAULT_WIDTH:  usize = 16;
-    pub const DEFAULT_HEIGHT: usize = 16;
 }

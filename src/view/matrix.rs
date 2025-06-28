@@ -24,6 +24,6 @@ impl<T> Matrix<T> {
     }
 
     pub fn get(&self, place: PlaceUsize) -> &T {
-        &self.data[place.x * self.size.width + place.y]
+        &self.data[place.x * self.size.height + place.y]
     }
 }
