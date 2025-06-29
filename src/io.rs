@@ -2,7 +2,6 @@ use crate::game::{Game, Action, Direction::*};
 use crate::helper::{SizeI32, SizeUsize};
 use crate::io::input::Input;
 use crate::view::View;
-use std::time::{self, Duration};
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
 use crossterm::terminal;
