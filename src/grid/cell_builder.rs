@@ -41,6 +41,6 @@ impl CellBuilder {
     fn get_random_seed() -> u64 {
         let mut rng = StdRng::from_os_rng();
         rng.next_u64()
-        // ;0xDEADBEEF
+        ;0xDEADBEEF
     }
 }

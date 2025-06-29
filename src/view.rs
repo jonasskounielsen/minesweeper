@@ -88,7 +88,7 @@ impl View {
             } if show_mines => ViewCell::Mine,
             Cell {
                 state: CellState::Flagged,
-                value: CellValue::Mine,
+                value: CellValue::Empty,
             } if show_mines => ViewCell::IncorrectFlag,
             Cell { state: CellState::Hidden,  .. } => ViewCell::Unrevealed,
             Cell { state: CellState::Flagged, .. } => ViewCell::Flagged,
