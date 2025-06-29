@@ -147,7 +147,7 @@ impl Game {
 
     // in original minesweeper, doesn't reveal cells when there are too many flags around the cell 
     fn reveal_adjacent(&mut self, place: PlaceI32) {
-        dbg!("test");
+        let CellState::Revealed = self.grid.get(place).state else { return; };
         for i in -1..=1 {
             for j in -1..=1 {
                 if let (0, 0) = (i, j) {
