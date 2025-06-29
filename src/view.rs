@@ -190,13 +190,15 @@ impl View {
             place.y as i32 - cursor.y as i32,
         );
         match (dist_x, dist_y) {
-            (-1,  1) =>  return Self::SLIM_TOP_LEFT_CORNER,
-            ( 1,  1) =>  return Self::SLIM_TOP_RIGHT_CORNER,
-            (-1, -1) =>  return Self::SLIM_BOTTOM_LEFT_CORNER,
-            ( 1, -1) =>  return Self::SLIM_BOTTOM_RIGHT_CORNER,
-            (-1,  0) =>  return Self::SLIM_LEFT_BORDER,
-            ( 1,  0) =>  return Self::SLIM_RIGHT_BORDER,
-            // top/bottom border would overwrite adjacent cells
+            // (-1,  1) =>  return Self::SLIM_TOP_LEFT_CORNER,
+            // ( 1,  1) =>  return Self::SLIM_TOP_RIGHT_CORNER,
+            // (-1, -1) =>  return Self::SLIM_BOTTOM_LEFT_CORNER,
+            // ( 1, -1) =>  return Self::SLIM_BOTTOM_RIGHT_CORNER,
+            // (-1,  0) =>  return Self::SLIM_LEFT_BORDER,
+            // ( 1,  0) =>  return Self::SLIM_RIGHT_BORDER,
+            // // top/bottom border would overwrite adjacent cells
+            (-1,  0) =>  return "[",
+            ( 1,  0) =>  return "]",
             _ => (),
         }
 
