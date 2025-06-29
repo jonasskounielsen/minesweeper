@@ -5,7 +5,7 @@ use crate::view::View;
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
 use crossterm::event::KeyModifiers;
-use crossterm::terminal::{self, disable_raw_mode};
+use crossterm::terminal::{self, disable_raw_mode, WindowSize};
 use crossterm::{
     event::{
         self,
@@ -43,6 +43,11 @@ pub struct Io {
 }
 
 impl Io {
+    pub const CURSOR_PADDING: SizeI32 = SizeI32 {
+        width:  3,
+        height: 3,
+    };
+
     pub fn new() -> Io {
         let input = Input::parse();
         let window_size = terminal::window_size().expect("failed to get terminal size");
@@ -50,11 +55,7 @@ impl Io {
             width:  window_size.columns as usize,
             height: window_size.rows    as usize,
         };
-        let matrix_size = View::matrix_size(window_size);
-        let max_cursor_displacement = SizeI32 {
-            width:  matrix_size.width  as i32 - 6,
-            height: matrix_size.height as i32 - 6,
-        };
+        let max_cursor_displacement = Self::max_cursor_displacement(window_size);
         Io {
             game: Game::new(
                 input.mine_concentration,
@@ -83,17 +84,22 @@ impl Io {
             }
         });
 
-        buffer.execute(EnterAlternateScreen)?;
+        // buffer.execute(EnterAlternateScreen)?;
         buffer.execute(Hide)?;
         enable_raw_mode()?;
         loop {
             buffer.execute(Clear(All))?;
 
-            let view = self.game.view(self.window_size);
+            if self.window_too_small() {
+                buffer.execute(MoveTo(0, 0))?;
+                buffer.execute(Print("window is too small"))?;
+            } else {
+                let view = self.game.view(self.window_size);
 
-            for (i, line) in view.render().iter().enumerate() {
-                buffer.execute(MoveTo(0, i as u16))?;
-                buffer.execute(Print(line))?;
+                for (i, line) in view.render().iter().enumerate() {
+                    buffer.execute(MoveTo(0, i as u16))?;
+                    buffer.execute(Print(line))?;
+                }
             }
             
 
@@ -106,12 +112,17 @@ impl Io {
                         Self::quit(buffer)?;
                         return Ok(());
                     },
-                    TerminalEvent::Key(key_event) => self.parse_key(key_event),
+                    TerminalEvent::Key(key_event) if !self.window_too_small() => {
+                        self.parse_key(key_event)
+                    },
                     TerminalEvent::Resize(new_width, new_height) => {
-                        self.window_size = SizeUsize {
+                        let new_size = SizeUsize {
                             width:  new_width  as usize,
                             height: new_height as usize,
-                        }
+                        };
+                        self.window_size = new_size;
+                        let new_max_cursor_displacement = Self::max_cursor_displacement(new_size);
+                        self.game.max_cursor_displacement = new_max_cursor_displacement;
                     },
                     _ => (),
                 }
@@ -146,6 +157,18 @@ impl Io {
             _ => return,
         };
         self.game.action(action);
+    }
+
+    fn window_too_small(&self) -> bool {
+        self.game.window_too_small(self.window_size)
+    }
+
+    fn max_cursor_displacement(window_size: SizeUsize) -> SizeI32 {
+        let matrix_size = View::matrix_size(window_size);
+        SizeI32 {
+            width:  matrix_size.width  as i32 - Self::CURSOR_PADDING.width  * 2,
+            height: matrix_size.height as i32 - Self::CURSOR_PADDING.height * 2,
+        }
     }
 }
 

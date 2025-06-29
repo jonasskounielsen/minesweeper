@@ -43,7 +43,7 @@ pub struct Game {
     end_instant: Option<time::Instant>,
     mine_concentration: f64,
     seed: Option<u64>,
-    max_cursor_displacement: SizeI32,
+    pub max_cursor_displacement: SizeI32,
 }
 
 impl Game {
@@ -219,10 +219,18 @@ impl Game {
         let show_mines = if let GameState::Lost = self.state { true } else { false };
         let latest_game_instant = self.end_instant.unwrap_or_else(|| time::Instant::now());
         View::new(
-            &self.grid,  size,
-            self.origin, self.cursor,
-            show_mines,  self.revealed_cell_count,
+            &self.grid,         size,
+            self.origin,        self.cursor,
+            show_mines,         self.revealed_cell_count,
             self.start_instant, latest_game_instant,
         )
+    }
+
+    pub fn window_too_small(&self, window_size: SizeUsize) -> bool {
+        let matrix_size = View::matrix_size(window_size);
+        dbg!(matrix_size);
+        dbg!(self.max_cursor_displacement);
+        return matrix_size.width  < self.max_cursor_displacement.width  as usize ||
+               matrix_size.height < self.max_cursor_displacement.height as usize;
     }
 }
