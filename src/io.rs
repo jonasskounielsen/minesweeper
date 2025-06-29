@@ -4,14 +4,15 @@ use crate::io::input::Input;
 use crate::view::View;
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
-use crossterm::{cursor, terminal};
+use crossterm::event::KeyModifiers;
+use crossterm::terminal::{self, disable_raw_mode};
 use crossterm::{
     event::{
         self,
         read,
         KeyEvent,
         KeyCode,
-        Event,
+        Event as TerminalEvent,
     },
     style::Print,
     terminal::{
@@ -70,7 +71,7 @@ impl Io {
         let tx_key = tx.clone();
         thread::spawn(move || -> io::Result<()> {
             loop {
-                tx_key.send(IoEvent::CrosstermEvent(read()?)).expect("failed to send Io event");
+                tx_key.send(IoEvent::CrosstermEvent(read()?)).expect("failed to send io event to main thread");
             }
         });
 
@@ -78,7 +79,7 @@ impl Io {
         thread::spawn(move || {
             loop {
                 thread::sleep(Game::time_until_timer_update());
-                tx_time.send(IoEvent::Second).expect("failed to send Io event");
+                tx_time.send(IoEvent::Second).expect("failed to send io event to main thread");
             }
         });
 
@@ -97,23 +98,33 @@ impl Io {
             
 
             match rx.recv().expect("failed to receive Io event") {
-                IoEvent::CrosstermEvent(event) => self.parse_event(event),
+                IoEvent::CrosstermEvent(event) => {
+                    match event {
+                    TerminalEvent::Key(KeyEvent {
+                        code: KeyCode::Char('c'), modifiers, ..
+                    }) if modifiers.contains(KeyModifiers::CONTROL) => {
+                        Self::quit(buffer)?;
+                        return Ok(());
+                    },
+                    TerminalEvent::Key(key_event) => self.parse_key(key_event),
+                    TerminalEvent::Resize(new_width, new_height) => {
+                        self.window_size = SizeUsize {
+                            width:  new_width  as usize,
+                            height: new_height as usize,
+                        }
+                    },
+                    _ => (),
+                }
+                },
                 IoEvent::Second => (), // update display when timer increments
             }
         }
     }
 
-    fn parse_event(&mut self, event: event::Event) {
-        match event {
-            Event::Key(key_event)  => self.parse_key   (key_event),
-            Event::Resize(new_width, new_height) => {
-                self.window_size = SizeUsize {
-                    width:  new_width  as usize,
-                    height: new_height as usize,
-                }
-            },
-            _ => (),
-        }
+    fn quit(mut buffer: impl io::Write) -> io::Result<()> {
+        buffer.execute(LeaveAlternateScreen)?;
+        disable_raw_mode()?;
+        Ok(())
     }
 
     fn parse_key(&mut self, key: KeyEvent) {
