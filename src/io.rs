@@ -4,7 +4,7 @@ use crate::io::input::Input;
 use crate::view::View;
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
-use crossterm::terminal;
+use crossterm::{cursor, terminal};
 use crossterm::{
     event::{
         self,
@@ -23,6 +23,7 @@ use crossterm::{
     },
     cursor::{
         MoveTo,
+        Hide,
     },
     ExecutableCommand,
 };
@@ -81,7 +82,8 @@ impl Io {
             }
         });
 
-        //buffer.execute(EnterAlternateScreen)?;
+        buffer.execute(EnterAlternateScreen)?;
+        buffer.execute(Hide)?;
         enable_raw_mode()?;
         loop {
             buffer.execute(Clear(All))?;
