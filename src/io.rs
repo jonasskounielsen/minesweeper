@@ -117,7 +117,7 @@ impl Io {
     fn parse_key(&mut self, key: KeyEvent) {
         if key.modifiers != event::KeyModifiers::NONE ||
            key.kind != event::KeyEventKind::Press {
-
+            return;
         }
         let action = match key.code {
             KeyCode::Left      => Action::MoveCursor(Left),
@@ -125,9 +125,9 @@ impl Io {
             KeyCode::Down      => Action::MoveCursor(Down),
             KeyCode::Up        => Action::MoveCursor(Up),
 
-            KeyCode::Enter     => Action::Reveal,
-            KeyCode::Backspace => Action::RevealAdjacent,
-            KeyCode::Char(' ') => Action::Flag,
+            KeyCode::Char(' ') => Action::Reveal,
+            KeyCode::Char('a') => Action::RevealAdjacent,
+            KeyCode::Char('f') => Action::Flag,
 
             KeyCode::Char('r') => Action::Reset,
             _ => return,
