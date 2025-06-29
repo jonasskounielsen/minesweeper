@@ -70,7 +70,7 @@ impl Io {
         let tx_key = tx.clone();
         thread::spawn(move || -> io::Result<()> {
             loop {
-                tx_key.send(IoEvent::CrosstermEvent(read()?));
+                tx_key.send(IoEvent::CrosstermEvent(read()?)).expect("failed to send Io event");
             }
         });
 
@@ -78,7 +78,7 @@ impl Io {
         thread::spawn(move || {
             loop {
                 thread::sleep(Game::time_until_timer_update());
-                tx_time.send(IoEvent::Second).unwrap();
+                tx_time.send(IoEvent::Second).expect("failed to send Io event");
             }
         });
 
@@ -95,7 +95,7 @@ impl Io {
             }
             
 
-            match rx.recv().unwrap() {
+            match rx.recv().expect("failed to receive Io event") {
                 IoEvent::CrosstermEvent(event) => self.parse_event(event),
                 IoEvent::Second => (), // update display when timer increments
             }
