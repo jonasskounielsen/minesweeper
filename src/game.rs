@@ -40,6 +40,7 @@ pub struct Game {
     origin: PlaceI32,
     revealed_cell_count: u32,
     start_instant: time::Instant,
+    end_instant: Option<time::Instant>,
     mine_concentration: f64,
     seed: Option<u64>,
     max_cursor_displacement: SizeI32,
@@ -54,6 +55,7 @@ impl Game {
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
             start_instant: time::Instant::now(),
+            end_instant: None,
             mine_concentration,
             seed,
             max_cursor_displacement,
@@ -69,6 +71,11 @@ impl Game {
             (_,                   Action::Reset) => self.reset(),
             _ => (),
         }
+    }
+
+    fn lose(&mut self) {
+        self.state = GameState::Lost;
+        self.end_instant = Some(time::Instant::now());
     }
 
     fn move_cursor(&mut self, direction: Direction) {
@@ -100,7 +107,6 @@ impl Game {
             Direction::Down   => self.max_cursor_displacement.height / 2 + 1,
             Direction::Up     => self.max_cursor_displacement.height / 2,
         };
-        dbg!(cursor_displacement, max_displacement);
 
         if cursor_displacement > max_displacement {
             match direction {
@@ -127,7 +133,7 @@ impl Game {
         self.grid.get_mut(place).reveal();
         
         if let CellValue::Mine = self.grid.get(place).value {
-            self.state = GameState::Lost;
+            self.lose();
             return;
         }
         self.revealed_cell_count += 1;
@@ -170,6 +176,7 @@ impl Game {
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
             start_instant: time::Instant::now(),
+            end_instant: None,
             mine_concentration:      self.mine_concentration,
             seed:                    self.seed,
             max_cursor_displacement: self.max_cursor_displacement,
@@ -210,11 +217,12 @@ impl Game {
 
     pub fn view(&self, size: SizeUsize) -> View {
         let show_mines = if let GameState::Lost = self.state { true } else { false };
+        let latest_game_instant = self.end_instant.unwrap_or_else(|| time::Instant::now());
         View::new(
             &self.grid,  size,
             self.origin, self.cursor,
             show_mines,  self.revealed_cell_count,
-            self.start_instant,
+            self.start_instant, latest_game_instant,
         )
     }
 }

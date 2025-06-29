@@ -42,7 +42,7 @@ pub struct View {
     matrix_cursor: PlaceUsize,
     game_cursor: PlaceI32,
     revealed_cell_count: u32,
-    start_instant: time::Instant,
+    game_duration: time::Duration,
 }
 
 impl View {
@@ -50,7 +50,7 @@ impl View {
         grid: &Grid,      window_size: SizeUsize,
         origin: PlaceI32, game_cursor: PlaceI32,
         show_mines: bool, revealed_cell_count: u32,
-        start_instant: time::Instant,
+        start_instant: time::Instant, latest_game_instant: time::Instant,
     ) -> View {
         let matrix_size = Self::matrix_size(window_size);
         let matrix = Matrix::new(
@@ -67,15 +67,14 @@ impl View {
             x: (game_cursor.x + matrix_size.width  as i32 / 2 - origin.x) as usize,
             y: (game_cursor.y + matrix_size.height as i32 / 2 - origin.y) as usize,
         };
-        dbg!(origin, game_cursor, matrix_size, window_size, matrix_cursor);
-        // dbg!(vec![0; 1][2]);
+        let game_duration = latest_game_instant.duration_since(start_instant);
         View {
             matrix,
             window_size,
             matrix_cursor,
             game_cursor,
             revealed_cell_count,
-            start_instant,
+            game_duration,
         }
     }
 
@@ -135,7 +134,7 @@ impl View {
         lines.push(line);
 
         let mut line = String::new(); 
-        let time = self.start_instant.elapsed().as_secs();
+        let time = self.game_duration.as_secs();
         line += &format!(
             "{:<pad_dist$}{time}",
             self.revealed_cell_count.to_string(),
