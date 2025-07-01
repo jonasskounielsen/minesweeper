@@ -5,7 +5,7 @@ use crate::view::View;
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
 use crossterm::event::KeyModifiers;
-use crossterm::terminal::{self, disable_raw_mode, WindowSize};
+use crossterm::terminal::{self, disable_raw_mode};
 use crossterm::{
     event::{
         self,
@@ -24,6 +24,7 @@ use crossterm::{
     },
     cursor::{
         MoveTo,
+        Show,
         Hide,
     },
     ExecutableCommand,
@@ -84,7 +85,7 @@ impl Io {
             }
         });
 
-        // buffer.execute(EnterAlternateScreen)?;
+        buffer.execute(EnterAlternateScreen)?;
         buffer.execute(Hide)?;
         enable_raw_mode()?;
         loop {
@@ -135,6 +136,7 @@ impl Io {
     fn quit(mut buffer: impl io::Write) -> io::Result<()> {
         buffer.execute(LeaveAlternateScreen)?;
         disable_raw_mode()?;
+        buffer.execute(Show)?;
         Ok(())
     }
 
