@@ -10,6 +10,7 @@ pub enum Action {
     Flag,
     RevealAdjacent,
     Reset,
+    Resize(SizeUsize),
 }
 
 pub enum  Direction {
@@ -43,11 +44,17 @@ pub struct Game {
     end_instant: Option<time::Instant>,
     mine_concentration: f64,
     seed: Option<u64>,
-    pub max_cursor_displacement: SizeI32,
+    max_cursor_displacement: SizeI32,
 }
 
 impl Game {
-    pub fn new(mine_concentration: f64, seed: Option<u64>, max_cursor_displacement: SizeI32) -> Game {
+    pub const CURSOR_PADDING: SizeI32 = SizeI32 {
+        width:  3,
+        height: 3,
+    };
+
+    pub fn new(mine_concentration: f64, seed: Option<u64>, window_size: SizeUsize) -> Game {
+        let max_cursor_displacement = Self::max_cursor_displacement(window_size);
         Game {
             state: GameState::Underway,
             grid: Grid::new(mine_concentration, seed),
@@ -69,6 +76,7 @@ impl Game {
             (GameState::Underway, Action::RevealAdjacent) => self.reveal_adjacent(self.cursor),
             (_,                   Action::MoveCursor(direction)) => self.move_cursor(direction),
             (_,                   Action::Reset) => self.reset(),
+            (_,                   Action::Resize(new_size)) => self.resize(new_size),
             _ => (),
         }
     }
@@ -86,36 +94,7 @@ impl Game {
             Direction::Up     => self.cursor.y += 1,
         };
         
-        let cursor_displacement = i32::abs_diff(
-            match direction {
-                Direction::Left   => self.cursor.x,
-                Direction::Right  => self.cursor.x,
-                Direction::Down   => self.cursor.y,
-                Direction::Up     => self.cursor.y,
-            },
-            match direction {
-                Direction::Left   => self.origin.x,
-                Direction::Right  => self.origin.x,
-                Direction::Down   => self.origin.y,
-                Direction::Up     => self.origin.y,
-            }
-        ) as i32;
-
-        let max_displacement = match direction {
-            Direction::Left   => self.max_cursor_displacement.width  / 2 + 1,
-            Direction::Right  => self.max_cursor_displacement.width  / 2,
-            Direction::Down   => self.max_cursor_displacement.height / 2 + 1,
-            Direction::Up     => self.max_cursor_displacement.height / 2,
-        };
-
-        if cursor_displacement > max_displacement {
-            match direction {
-                Direction::Left   => self.origin.x -= 1,
-                Direction::Right  => self.origin.x += 1,
-                Direction::Down   => self.origin.y -= 1,
-                Direction::Up     => self.origin.y += 1,
-            };
-        }
+        self.tether_origin();
     }
 
     fn toggle_flag(&mut self, place: PlaceI32) {
@@ -183,6 +162,58 @@ impl Game {
         };
     }
 
+    fn resize(&mut self, new_size: SizeUsize) {
+        let new_max_cursor_displacement = Self::max_cursor_displacement(new_size);
+        self.max_cursor_displacement = new_max_cursor_displacement;
+        self.tether_cursor();
+    }
+
+    fn tether_cursor(&mut self) {
+        let cursor_displacement = PlaceI32 {
+            x: self.cursor.x - self.origin.x,
+            y: self.cursor.y - self.origin.y,
+        };
+
+        if cursor_displacement.x >  self.max_cursor_displacement.width / 2 - 1 {
+            self.cursor.x = self.origin.x + (self.max_cursor_displacement.width - 1) / 2;
+        }
+
+        if cursor_displacement.x < -self.max_cursor_displacement.width / 2 {
+            self.cursor.x = self.origin.x -  self.max_cursor_displacement.width / 2;
+        }
+
+        if cursor_displacement.y >  self.max_cursor_displacement.height / 2 - 1 {
+            self.cursor.y = self.origin.y + (self.max_cursor_displacement.height - 1) / 2;
+        }
+
+        if cursor_displacement.y < -self.max_cursor_displacement.height / 2 {
+            self.cursor.y = self.origin.y -  self.max_cursor_displacement.height / 2;
+        }
+    }
+
+    fn tether_origin(&mut self) {
+        let cursor_displacement = PlaceI32 {
+            x: self.cursor.x - self.origin.x,
+            y: self.cursor.y - self.origin.y,
+        };
+
+        if cursor_displacement.x >  self.max_cursor_displacement.width / 2 - 1 {
+            self.origin.x = self.cursor.x - (self.max_cursor_displacement.width - 1) / 2;
+        }
+
+        if cursor_displacement.x < -self.max_cursor_displacement.width / 2 {
+            self.origin.x = self.cursor.x +  self.max_cursor_displacement.width / 2;
+        }
+
+        if cursor_displacement.y >  self.max_cursor_displacement.height / 2 - 1 {
+            self.origin.y = self.cursor.y - (self.max_cursor_displacement.height - 1) / 2;
+        }
+
+        if cursor_displacement.y < -self.max_cursor_displacement.height / 2 {
+            self.origin.y = self.cursor.y +  self.max_cursor_displacement.height / 2;
+        }
+    }
+
     pub fn mine_count(grid: &Grid, place: PlaceI32) -> MineCount {
         let mut count = 0;
         for i in -1..=1 {
@@ -226,11 +257,17 @@ impl Game {
         )
     }
 
+    fn max_cursor_displacement(window_size: SizeUsize) -> SizeI32 {
+        let matrix_size = View::matrix_size(window_size);
+        SizeI32 {
+            width:  matrix_size.width  as i32 - Self::CURSOR_PADDING.width  * 2,
+            height: matrix_size.height as i32 - Self::CURSOR_PADDING.height * 2,
+        }
+    }
+
     pub fn window_too_small(&self, window_size: SizeUsize) -> bool {
         let matrix_size = View::matrix_size(window_size);
-        dbg!(matrix_size);
-        dbg!(self.max_cursor_displacement);
-        return matrix_size.width  < self.max_cursor_displacement.width  as usize ||
-               matrix_size.height < self.max_cursor_displacement.height as usize;
+        matrix_size.width  < self.max_cursor_displacement.width  as usize ||
+        matrix_size.height < self.max_cursor_displacement.height as usize
     }
 }
