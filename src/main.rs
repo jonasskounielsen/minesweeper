@@ -8,6 +8,5 @@ use io::Io;
 
 fn main() -> std::io::Result<()> {
     let mut io = Io::new();
-
     io.run(std::io::stdout())
 }

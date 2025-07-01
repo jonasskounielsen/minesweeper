@@ -11,7 +11,7 @@ keybinds:
     arrow keys for movement
     space to reveal
     f to flag
-    a to reveal adjacent
+    a to reveal adjacent, non-flagged cells
     r to restart"#,
 )]
 pub struct Input {

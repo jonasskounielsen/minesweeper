@@ -1,7 +1,6 @@
 use crate::game::{Game, Action, Direction::*};
-use crate::helper::{SizeI32, SizeUsize};
+use crate::helper::SizeUsize;
 use crate::io::input::Input;
-use crate::view::View;
 use std::{io, thread, sync::mpsc};
 use clap::Parser;
 use crossterm::event::KeyModifiers;
