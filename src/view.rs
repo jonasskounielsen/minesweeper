@@ -1,6 +1,6 @@
 use std::{io, time};
 use crossterm::cursor::MoveTo;
-use crossterm::style::Print;
+use crossterm::style::{Color, Colors, Print, ResetColor, SetColors, SetForegroundColor};
 use crossterm::ExecutableCommand;
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
@@ -29,10 +29,28 @@ impl ViewCell {
             ViewCell::Clear         => "0",
             ViewCell::Mine          => "*",
             ViewCell::IncorrectFlag => "X",
-            ViewCell::One        => "1", ViewCell::Two        => "2",
-            ViewCell::Three      => "3", ViewCell::Four       => "4",
-            ViewCell::Five       => "5", ViewCell::Six        => "6",
-            ViewCell::Seven      => "7", ViewCell::Eight      => "8",
+            ViewCell::One   => "1", ViewCell::Two   => "2",
+            ViewCell::Three => "3", ViewCell::Four  => "4",
+            ViewCell::Five  => "5", ViewCell::Six   => "6",
+            ViewCell::Seven => "7", ViewCell::Eight => "8",
+        }
+    }
+
+    pub fn color(&self) -> Color {
+        match *self {
+            ViewCell::Unrevealed    => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
+            ViewCell::Flagged       => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
+            ViewCell::Clear         => Color::Rgb { r: 0xbd, g: 0xbd, b: 0xbd },
+            ViewCell::Mine          => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
+            ViewCell::IncorrectFlag => Color::Rgb { r: 0xff, g: 0x00, b: 0x00 },
+            ViewCell::One   => Color::Rgb { r: 0x00, g: 0x00, b: 0xff },
+            ViewCell::Two   => Color::Rgb { r: 0x00, g: 0x7b, b: 0x00 },
+            ViewCell::Three => Color::Rgb { r: 0xff, g: 0x00, b: 0x00 },
+            ViewCell::Four  => Color::Rgb { r: 0x00, g: 0x00, b: 0x7b },
+            ViewCell::Five  => Color::Rgb { r: 0x7b, g: 0x00, b: 0x00 },
+            ViewCell::Six   => Color::Rgb { r: 0x00, g: 0x7b, b: 0x7b },
+            ViewCell::Seven => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
+            ViewCell::Eight => Color::Rgb { r: 0x7b, g: 0x7b, b: 0x7b },
         }
     }
 }
@@ -149,15 +167,21 @@ impl View {
         Self::render_line(buffer, 2, &line)?;
 
         for y in (0..self.matrix.size.height).rev() {
-            let mut line = String::new();
+            let line = self.matrix.size.height - y + 2;
+            Self::render_character(
+                buffer, line, 0,
+                (Self::FAT_LEFT_BORDER, None),
+            )?;
 
-            line += Self::FAT_LEFT_BORDER;
             for x in 0..(self.window_size.width - 2) {
                 let place = PlaceUsize { x, y };
-                line += self.get_character(place);
+                let character_and_color = self.get_character_and_color(place);
+                Self::render_character(buffer, line, x + 1, character_and_color)?;
             }
-            line += Self::FAT_RIGHT_BORDER;
-            Self::render_line(buffer, self.matrix.size.height - y + 2, &line)?;
+            Self::render_character(
+                buffer, line, self.window_size.width - 1,
+                (Self::FAT_RIGHT_BORDER, None),
+            )?;
         }
 
         let mut line = String::new(); 
@@ -178,13 +202,29 @@ impl View {
         Ok(())
     }
 
-    fn render_line(buffer: &mut impl io::Write,  line: usize, text: &str) -> io::Result<()> {
+    fn render_line(buffer: &mut impl io::Write, line: usize, text: &str) -> io::Result<()> {
         buffer.execute(MoveTo(0, line.try_into().expect("line number above u16 integer limit")))?;
         buffer.execute(Print(text))?;
         Ok(())
     }
 
-    fn get_character(&self, place: PlaceUsize) -> &'static str {
+    fn render_character(
+        buffer: &mut impl io::Write, line: usize,
+        column: usize, (character, color): (&str, Option<Color>),
+    ) -> io::Result<()> {
+        buffer.execute(MoveTo(
+            column.try_into().expect("column number above u16 integer limit"),
+            line  .try_into().expect("line number above u16 integer limit"),
+        ))?;
+        if let Some(color) = color {
+            buffer.execute(SetForegroundColor(color))?;
+        }
+        buffer.execute(Print(character))?;
+        buffer.execute(ResetColor)?;
+        Ok(())
+    }
+
+    fn get_character_and_color(&self, place: PlaceUsize) -> (&'static str, Option<Color>) {
         let cursor = PlaceUsize {
             x: self.matrix_cursor.x * 2 + 1,
             y: self.matrix_cursor.y,
@@ -201,13 +241,13 @@ impl View {
             // (-1,  0) =>  return Self::SLIM_LEFT_BORDER,
             // ( 1,  0) =>  return Self::SLIM_RIGHT_BORDER,
             // // top/bottom border would overwrite adjacent cells
-            (-1,  0) =>  return "[",
-            ( 1,  0) =>  return "]",
+            (-1,  0) =>  return ("[", None),
+            ( 1,  0) =>  return ("]", None),
             _ => (),
         }
 
         if place.x % 2 != 1 {
-            return Self::SPACE;
+            return (Self::SPACE, None);
         }
 
         let matrix_place = PlaceUsize {
@@ -215,7 +255,9 @@ impl View {
             y: place.y
         };
 
-        self.matrix.get(matrix_place).char()
+        let view_cell = self.matrix.get(matrix_place);
+
+        (view_cell.char(), Some(view_cell.color()))
     }
 
     pub fn matrix_size(window_size: SizeUsize) -> SizeUsize {
