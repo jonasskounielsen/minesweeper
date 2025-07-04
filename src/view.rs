@@ -1,5 +1,7 @@
-use std::time;
-
+use std::{io, time};
+use crossterm::cursor::MoveTo;
+use crossterm::style::Print;
+use crossterm::ExecutableCommand;
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
 use crate::grid::Grid;
@@ -121,17 +123,15 @@ impl View {
     // const SLIM_BOTTOM_BORDER:       &str = "─";
     const SPACE:                    &str = " ";
 
-    pub fn render(&self) -> Vec<String> {
-        let mut lines = Vec::new();
-
-        let mut line = String::new(); 
+    pub fn render(&self, buffer: &mut impl io::Write) -> io::Result<()> {
+        let mut line = String::new();
         line += &format!(
             "{:<pad_dist$}{}",
             "SCORE",
             "TIME",
             pad_dist = self.window_size.width - "TIME".len(),
         );
-        lines.push(line);
+        Self::render_line(buffer, 0, &line)?;
 
         let mut line = String::new(); 
         let time = self.game_duration.as_secs();
@@ -140,13 +140,13 @@ impl View {
             self.revealed_cell_count.to_string(),
             pad_dist = self.window_size.width - time.to_string().len(),
         );
-        lines.push(line);
+        Self::render_line(buffer, 1, &line)?;
 
         let mut line = String::new(); 
         line +=  Self::FAT_TOP_LEFT_CORNER;
         line += &Self::FAT_TOP_BORDER.repeat(self.window_size.width - 2);
         line +=  Self::FAT_TOP_RIGHT_CORNER;
-        lines.push(line);
+        Self::render_line(buffer, 2, &line)?;
 
         for y in (0..self.matrix.size.height).rev() {
             let mut line = String::new();
@@ -157,14 +157,14 @@ impl View {
                 line += self.get_character(place);
             }
             line += Self::FAT_RIGHT_BORDER;
-            lines.push(line);
+            Self::render_line(buffer, self.matrix.size.height - y + 2, &line)?;
         }
 
         let mut line = String::new(); 
         line +=  Self::FAT_BOTTOM_LEFT_CORNER;
         line += &Self::FAT_BOTTOM_BORDER.repeat(self.window_size.width - 2);
         line +=  Self::FAT_BOTTOM_RIGHT_CORNER;
-        lines.push(line);
+        Self::render_line(buffer, self.matrix.size.height + 3, &line)?;
 
         let mut line = String::new(); 
         line += &format!(
@@ -173,16 +173,21 @@ impl View {
             format!("{})", self.game_cursor.y),
             pad_dist = self.window_size.width / 2 - 1,
         );
-        lines.push(line);
+        Self::render_line(buffer, self.matrix.size.height + 4, &line)?;
 
-        lines
+        Ok(())
+    }
+
+    fn render_line(buffer: &mut impl io::Write,  line: usize, text: &str) -> io::Result<()> {
+        buffer.execute(MoveTo(0, line.try_into().expect("line number above u16 integer limit")))?;
+        buffer.execute(Print(text))?;
+        Ok(())
     }
 
     fn get_character(&self, place: PlaceUsize) -> &'static str {
-        let matrix_cursor = self.matrix_cursor;
         let cursor = PlaceUsize {
-            x: matrix_cursor.x * 2 + 1,
-            y: matrix_cursor.y,
+            x: self.matrix_cursor.x * 2 + 1,
+            y: self.matrix_cursor.y,
         };
         let (dist_x, dist_y) = (
             place.x as i32 - cursor.x as i32,

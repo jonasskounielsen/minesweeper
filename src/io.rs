@@ -89,11 +89,7 @@ impl Io {
                 buffer.execute(Print("window is too small"))?;
             } else {
                 let view = self.game.view(self.window_size);
-
-                for (i, line) in view.render().iter().enumerate() {
-                    buffer.execute(MoveTo(0, i as u16))?;
-                    buffer.execute(Print(line))?;
-                }
+                view.render(&mut buffer)?;
             }
             
 
