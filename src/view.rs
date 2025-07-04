@@ -1,7 +1,7 @@
 use std::{io, time};
 use crossterm::cursor::MoveTo;
-use crossterm::style::{Color, Colors, Print, ResetColor, SetColors, SetForegroundColor};
-use crossterm::ExecutableCommand;
+use crossterm::style::{Color, Print, ResetColor, SetForegroundColor};
+use crossterm::QueueableCommand;
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, MineCount};
 use crate::grid::Grid;
@@ -39,9 +39,9 @@ impl ViewCell {
     pub fn color(&self) -> Color {
         match *self {
             ViewCell::Unrevealed    => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
-            ViewCell::Flagged       => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
+            ViewCell::Flagged       => Color::Rgb { r: 0xbd, g: 0xbd, b: 0xbd },
             ViewCell::Clear         => Color::Rgb { r: 0xbd, g: 0xbd, b: 0xbd },
-            ViewCell::Mine          => Color::Rgb { r: 0x00, g: 0x00, b: 0x00 },
+            ViewCell::Mine          => Color::Rgb { r: 0xbd, g: 0xbd, b: 0xbd },
             ViewCell::IncorrectFlag => Color::Rgb { r: 0xff, g: 0x00, b: 0x00 },
             ViewCell::One   => Color::Rgb { r: 0x00, g: 0x00, b: 0xff },
             ViewCell::Two   => Color::Rgb { r: 0x00, g: 0x7b, b: 0x00 },
@@ -63,14 +63,16 @@ pub struct View {
     game_cursor: PlaceI32,
     revealed_cell_count: u32,
     game_duration: time::Duration,
+    seed: u64,
 }
 
 impl View {
     pub fn new(
-        grid: &Grid,      window_size: SizeUsize,
-        origin: PlaceI32, game_cursor: PlaceI32,
-        show_mines: bool, revealed_cell_count: u32,
+        grid: &Grid,                  window_size: SizeUsize,
+        origin: PlaceI32,             game_cursor: PlaceI32,
+        show_mines: bool,             revealed_cell_count: u32,
         start_instant: time::Instant, latest_game_instant: time::Instant,
+        seed: u64,
     ) -> View {
         let matrix_size = Self::matrix_size(window_size);
         let matrix = Matrix::new(
@@ -95,6 +97,7 @@ impl View {
             game_cursor,
             revealed_cell_count,
             game_duration,
+            seed,
         }
     }
 
@@ -199,12 +202,24 @@ impl View {
         );
         Self::render_line(buffer, self.matrix.size.height + 4, &line)?;
 
+        let _ = self.seed;
+        // let mut line = String::new();
+        // line += &format!(
+        //     "{:<pad_dist$}0x{:X}",
+        //     "SEED",
+        //     self.seed,
+        //     pad_dist = self.window_size.width - "0x0123456789ABCDEF".len(),
+        // );
+        // Self::render_line(buffer, self.matrix.size.height + 5, &line)?;
+
+        buffer.flush()?;
+
         Ok(())
     }
 
     fn render_line(buffer: &mut impl io::Write, line: usize, text: &str) -> io::Result<()> {
-        buffer.execute(MoveTo(0, line.try_into().expect("line number above u16 integer limit")))?;
-        buffer.execute(Print(text))?;
+        buffer.queue(MoveTo(0, line.try_into().expect("line number above u16 integer limit")))?;
+        buffer.queue(Print(text))?;
         Ok(())
     }
 
@@ -212,15 +227,15 @@ impl View {
         buffer: &mut impl io::Write, line: usize,
         column: usize, (character, color): (&str, Option<Color>),
     ) -> io::Result<()> {
-        buffer.execute(MoveTo(
+        buffer.queue(MoveTo(
             column.try_into().expect("column number above u16 integer limit"),
             line  .try_into().expect("line number above u16 integer limit"),
         ))?;
         if let Some(color) = color {
-            buffer.execute(SetForegroundColor(color))?;
+            buffer.queue(SetForegroundColor(color))?;
         }
-        buffer.execute(Print(character))?;
-        buffer.execute(ResetColor)?;
+        buffer.queue(Print(character))?;
+        buffer.queue(ResetColor)?;
         Ok(())
     }
 

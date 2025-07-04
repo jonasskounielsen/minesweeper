@@ -1,3 +1,4 @@
+use crate::grid::cell_builder::CellBuilder;
 use crate::view::View;
 use crate::helper::{PlaceI32, SizeI32, SizeUsize};
 use crate::grid::Grid;
@@ -43,6 +44,7 @@ pub struct Game {
     start_instant: time::Instant,
     end_instant: Option<time::Instant>,
     mine_concentration: f64,
+    cell_builder: CellBuilder,
     seed: Option<u64>,
     max_cursor_displacement: SizeI32,
 }
@@ -55,15 +57,17 @@ impl Game {
 
     pub fn new(mine_concentration: f64, seed: Option<u64>, window_size: SizeUsize) -> Game {
         let max_cursor_displacement = Self::max_cursor_displacement(window_size);
+        let cell_builder = CellBuilder::new(mine_concentration, seed);
         Game {
             state: GameState::Underway,
-            grid: Grid::new(mine_concentration, seed),
+            grid: Grid::new(cell_builder),
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
             start_instant: time::Instant::now(),
             end_instant: None,
             mine_concentration,
+            cell_builder,
             seed,
             max_cursor_displacement,
         }
@@ -148,15 +152,17 @@ impl Game {
     }
 
     fn reset(&mut self) {
+        let cell_builder = CellBuilder::new(self.mine_concentration, self.seed);
         *self = Game {
             state: GameState::Underway,
-            grid: Grid::new(self.mine_concentration, self.seed),
+            grid: Grid::new(cell_builder),
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
             start_instant: time::Instant::now(),
             end_instant: None,
             mine_concentration:      self.mine_concentration,
+            cell_builder,
             seed:                    self.seed,
             max_cursor_displacement: self.max_cursor_displacement,
         };
@@ -254,6 +260,7 @@ impl Game {
             self.origin,        self.cursor,
             show_mines,         self.revealed_cell_count,
             self.start_instant, latest_game_instant,
+            self.cell_builder.seed,
         )
     }
 

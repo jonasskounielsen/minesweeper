@@ -27,7 +27,7 @@ pub enum Quadrant {
 }
 
 impl Tile {
-    pub fn new(radius: i32, builder: CellBuilder) -> Subtiles {
+    pub fn new(radius: i32, cell_builder: CellBuilder) -> Subtiles {
         Subtiles {
             origin: PlaceI32::ORIGIN,
             radius,
@@ -35,7 +35,7 @@ impl Tile {
             bottom_right: Tile::None,
             top_left:     Tile::None,
             top_right:    Tile::None,
-            builder,
+            builder: cell_builder,
         }
     }
 

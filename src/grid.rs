@@ -5,7 +5,7 @@ use self::tile::{Tile, Subtiles};
 use std::cell::{RefCell, RefMut};
 
 pub mod cell;
-mod cell_builder;
+pub mod cell_builder;
 mod tile;
 
 #[derive(Debug)]
@@ -14,10 +14,10 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn new(mine_concentration: f64, seed: Option<u64>) -> Grid {
+    pub fn new(cell_builder: CellBuilder) -> Grid {
         Self {
             tile: RefCell::new(
-                Tile::new(1, CellBuilder::new(mine_concentration, seed)),
+                Tile::new(1, cell_builder),
             ),
         }
     }

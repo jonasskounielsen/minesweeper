@@ -4,8 +4,8 @@ use super::{PlaceI32, Cell, CellValue};
 
 #[derive(Clone, Copy, Debug)]
 pub struct CellBuilder {
-    mine_concentration: f64,
-    seed: u64,
+    pub mine_concentration: f64,
+    pub seed: u64,
     origin: PlaceI32,
 }
 
