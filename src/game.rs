@@ -46,6 +46,7 @@ pub struct Game {
     mine_concentration: f64,
     cell_builder: CellBuilder,
     seed: Option<u64>,
+    window_size: SizeUsize,
     max_cursor_displacement: SizeI32,
 }
 
@@ -70,6 +71,7 @@ impl Game {
             mine_concentration,
             cell_builder,
             seed,
+            window_size,
             max_cursor_displacement,
         };
         game.reveal(PlaceI32 { x: 0, y: 0 });
@@ -155,20 +157,7 @@ impl Game {
     }
 
     fn reset(&mut self) {
-        let cell_builder = CellBuilder::new(self.mine_concentration, self.seed);
-        *self = Game {
-            state: GameState::Underway,
-            grid: Grid::new(cell_builder),
-            cursor: PlaceI32 { x: 0, y: 0 },
-            origin: PlaceI32 { x: 0, y: 0 },
-            revealed_cell_count: 0,
-            start_instant: time::Instant::now(),
-            end_instant: None,
-            mine_concentration:      self.mine_concentration,
-            cell_builder,
-            seed:                    self.seed,
-            max_cursor_displacement: self.max_cursor_displacement,
-        };
+        *self = Game::new(self.mine_concentration, self.seed, self.window_size);
     }
 
     fn resize(&mut self, new_size: SizeUsize) {
