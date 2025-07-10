@@ -58,9 +58,10 @@ impl Game {
     pub fn new(mine_concentration: f64, seed: Option<u64>, window_size: SizeUsize) -> Game {
         let max_cursor_displacement = Self::max_cursor_displacement(window_size);
         let cell_builder = CellBuilder::new(mine_concentration, seed);
-        Game {
+        let grid = Grid::new(cell_builder);
+        let mut game = Game {
             state: GameState::Underway,
-            grid: Grid::new(cell_builder),
+            grid,
             cursor: PlaceI32 { x: 0, y: 0 },
             origin: PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
@@ -70,7 +71,9 @@ impl Game {
             cell_builder,
             seed,
             max_cursor_displacement,
-        }
+        };
+        game.reveal(PlaceI32 { x: 0, y: 0 });
+        game
     }
 
     pub fn action(&mut self, action: Action) {
