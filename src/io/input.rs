@@ -22,6 +22,10 @@ pub struct Input {
     /// seed for the world generator (defaults to random)
     #[arg(short, long, hide_default_value = true)]
     pub seed: Option<u64>,
+
+    /// use gray background
+    #[arg(name = "light-mode", short, long, default_value_t = false)]
+    pub light_mode: bool,
 }
 
 impl Input {

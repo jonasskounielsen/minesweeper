@@ -55,6 +55,7 @@ impl Io {
                 input.mine_concentration,
                 input.seed,
                 window_size,
+                input.light_mode,
             ),
             window_size,
         }
