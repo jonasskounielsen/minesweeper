@@ -29,7 +29,7 @@ pub enum MineCount {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum GameState {
+pub enum GameState {
     Underway,
     Lost,
 }
@@ -256,11 +256,11 @@ impl Game {
         let show_mines = if let GameState::Lost = self.state { true } else { false };
         let latest_game_instant = self.end_instant.unwrap_or_else(|| time::Instant::now());
         View::new(
-            &self.grid,         size,
-            self.origin,        self.cursor,
-            show_mines,         self.revealed_cell_count,
-            self.start_instant, latest_game_instant,
-            self.cell_builder.seed,
+            &self.grid,            size,
+            self.origin,           self.cursor,
+            show_mines,            self.revealed_cell_count,
+            self.start_instant,    latest_game_instant,
+            self.state, self.cell_builder.seed,
         )
     }
 

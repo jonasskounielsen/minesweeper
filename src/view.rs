@@ -3,7 +3,7 @@ use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, Print, ResetColor, SetForegroundColor};
 use crossterm::QueueableCommand;
 use crate::grid::cell::{Cell, CellState, CellValue};
-use crate::game::{Game, MineCount};
+use crate::game::{Game, GameState, MineCount};
 use crate::grid::Grid;
 use self::matrix::Matrix;
 use crate::helper::{PlaceI32, PlaceUsize, SizeUsize};
@@ -63,6 +63,7 @@ pub struct View {
     game_cursor: PlaceI32,
     revealed_cell_count: u32,
     game_duration: time::Duration,
+    game_state: GameState,
     seed: u64,
 }
 
@@ -72,7 +73,7 @@ impl View {
         origin: PlaceI32,             game_cursor: PlaceI32,
         show_mines: bool,             revealed_cell_count: u32,
         start_instant: time::Instant, latest_game_instant: time::Instant,
-        seed: u64,
+        game_state: GameState,        seed: u64,
     ) -> View {
         let matrix_size = Self::matrix_size(window_size);
         let matrix = Matrix::new(
@@ -97,6 +98,7 @@ impl View {
             game_cursor,
             revealed_cell_count,
             game_duration,
+            game_state,
             seed,
         }
     }
@@ -145,18 +147,33 @@ impl View {
     const SPACE:                    &str = " ";
 
     pub fn render(&self, buffer: &mut impl io::Write) -> io::Result<()> {
-        let mut line = String::new();
-        line += &format!(
-            "{:<pad_dist$}{}",
-            "SCORE",
-            "TIME",
-            pad_dist = self.window_size.width - "TIME".len(),
-        );
+        let line = if let GameState::Underway = self.game_state {
+            format!(
+                "{:<pad_dist$}{}",
+                "SCORE",
+                "TIME",
+                pad_dist = self.window_size.width - "TIME".len(),
+            )
+        } else if self.window_size.width >= 21 {
+            let pad_left   = (self.window_size.width - 9) / 2;
+            let pad_right  = self.window_size.width - 9 - pad_left;
+            format!(
+                "{:<pad_left$}{}{:>pad_right$}",
+                "SCORE",
+                "GAME OVER",
+                "TIME",
+            )
+        } else {
+            format!(
+                "{:^width$}",
+                "GAME OVER",
+                width = self.window_size.width,
+            )
+        };
         Self::render_line(buffer, 0, &line)?;
 
-        let mut line = String::new(); 
         let time = self.game_duration.as_secs();
-        line += &format!(
+        let line = format!(
             "{:<pad_dist$}{time}",
             self.revealed_cell_count.to_string(),
             pad_dist = self.window_size.width - time.to_string().len(),
@@ -170,19 +187,19 @@ impl View {
         Self::render_line(buffer, 2, &line)?;
 
         for y in (0..self.matrix.size.height).rev() {
-            let line = self.matrix.size.height - y + 2;
+            let line_no = self.matrix.size.height - y + 2;
             Self::render_character(
-                buffer, line, 0,
+                buffer, line_no, 0,
                 (Self::FAT_LEFT_BORDER, None),
             )?;
 
             for x in 0..(self.window_size.width - 2) {
                 let place = PlaceUsize { x, y };
                 let character_and_color = self.get_character_and_color(place);
-                Self::render_character(buffer, line, x + 1, character_and_color)?;
+                Self::render_character(buffer, line_no, x + 1, character_and_color)?;
             }
             Self::render_character(
-                buffer, line, self.window_size.width - 1,
+                buffer, line_no, self.window_size.width - 1,
                 (Self::FAT_RIGHT_BORDER, None),
             )?;
         }
@@ -193,8 +210,7 @@ impl View {
         line +=  Self::FAT_BOTTOM_RIGHT_CORNER;
         Self::render_line(buffer, self.matrix.size.height + 3, &line)?;
 
-        let mut line = String::new(); 
-        line += &format!(
+        let line = format!(
             "{:>pad_dist$},{:<pad_dist$}",
             format!("({}", self.game_cursor.x),
             format!("{})", self.game_cursor.y),
