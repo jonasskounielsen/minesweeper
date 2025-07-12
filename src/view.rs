@@ -244,12 +244,12 @@ impl View {
 
     fn render_line(&self, buffer: &mut impl io::Write, line: usize, text: &str) -> io::Result<()> {
         buffer.queue(MoveTo(0, line.try_into().expect("line number above u16 integer limit")))?;
+        buffer.queue(ResetColor)?;
         if self.light_mode {
             buffer.queue(SetForegroundColor(Self::FOREGROUND_COLOR_LIGHT_MODE))?;
             buffer.queue(SetBackgroundColor(Self::BACKGROUND_COLOR_LIGHT_MODE))?;
         }
         buffer.queue(Print(text))?;
-        buffer.queue(ResetColor)?;
         Ok(())
     }
 
@@ -261,6 +261,7 @@ impl View {
             column.try_into().expect("column number above u16 integer limit"),
             line  .try_into().expect(  "line number above u16 integer limit"),
         ))?;
+        buffer.queue(ResetColor)?;
         if self.light_mode {
             buffer.queue(SetForegroundColor(Self::FOREGROUND_COLOR_LIGHT_MODE))?;
             buffer.queue(SetBackgroundColor(Self::BACKGROUND_COLOR_LIGHT_MODE))?;
@@ -269,7 +270,6 @@ impl View {
             buffer.queue(SetForegroundColor(color))?;
         }
         buffer.queue(Print(character))?;
-        buffer.queue(ResetColor)?;
         Ok(())
     }
 
