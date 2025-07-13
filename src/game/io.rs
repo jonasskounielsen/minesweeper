@@ -3,7 +3,7 @@ use crate::helper::SizeUsize;
 use std::sync::mpsc::{Receiver, Sender};
 use std::{io, thread, sync::mpsc};
 use crossterm::event::KeyModifiers;
-use crossterm::terminal::disable_raw_mode;
+use crossterm::terminal::{disable_raw_mode, Clear, ClearType};
 use crossterm::{
     event::{
         self,
@@ -89,7 +89,7 @@ impl<'a> Io<'a> {
                             };
                             self.window_size = new_size;
                             self.game.action(Action::Resize(new_size));
-                            println!("{:?}",new_size);
+                            buffer.execute(Clear(ClearType::All))?;
                         },
                         _ => (),
                     }

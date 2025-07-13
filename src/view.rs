@@ -161,7 +161,7 @@ impl View {
     pub fn render(&self, buffer: &mut impl io::Write) -> io::Result<()> {
         if self.window_too_small {
             buffer.queue(Clear(ClearType::All))?;
-            self.render_line(buffer, 0, "window is too small");
+            self.render_line(buffer, 0, "window is too small")?;
             return Ok(());
         }
 
