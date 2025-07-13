@@ -149,9 +149,19 @@ impl Game {
     }
 
     fn reveal(&mut self, place: PlaceI32) {
+        self.reveal_tracked(place, 0);
+    }
+
+    fn reveal_tracked(&mut self, place: PlaceI32, mut revealed: u32) {
         if let CellState::Revealed = self.grid.get(place).state { return };
         
         self.grid.get_mut(place).reveal();
+
+        revealed += 1;
+        if revealed >= 10000 {
+            // avoid stack overflow
+            panic!("too many adjacent clear cells; mine concentration is too low");
+        }
         
         if let CellValue::Mine = self.grid.get(place).value {
             self.lose();
@@ -167,12 +177,13 @@ impl Game {
                     continue;
                 }
                 let place = PlaceI32 { x: place.x + i, y: place.y + j };
-                self.reveal(place);
+                self.reveal_tracked(place, revealed);
             }
         }
     }
 
-    // in original minesweeper, doesn't reveal cells when there are too many flags around the cell 
+    // in original minesweeper, doesn't reveal cells
+    // when there are too many flags around the cell 
     fn reveal_adjacent(&mut self, place: PlaceI32) {
         let CellState::Revealed = self.grid.get(place).state else { return; };
         for i in -1..=1 {
