@@ -1,9 +1,16 @@
+mod io;
+mod input;
+
+use crate::game::input::Input;
 use crate::grid::cell_builder::CellBuilder;
 use crate::view::View;
 use crate::helper::{PlaceI32, SizeI32, SizeUsize};
 use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellState, CellValue};
 use std::time::{self, Duration};
+use clap::Parser;
+use crossterm::terminal;
+use io::Io;
 
 pub enum Action {
     MoveCursor(Direction),
@@ -57,6 +64,20 @@ impl Game {
         height: 3,
     };
 
+    pub fn start() -> std::io::Result<()> {
+        let input = Input::parse();
+        let window_size = terminal::window_size().expect("failed to get terminal size");
+        let window_size: SizeUsize = SizeUsize {
+            width:  window_size.columns as usize,
+            height: window_size.rows    as usize,
+        };
+        let mut game = Self::new(
+            input.mine_concentration, input.seed,
+            window_size, input.light_mode,
+        );
+        game.run(std::io::stdout())
+    }
+
     pub fn new(
         mine_concentration: f64,
         seed: Option<u64>,
@@ -83,6 +104,11 @@ impl Game {
         };
         game.reveal(PlaceI32 { x: 0, y: 0 });
         game
+    }
+
+    pub fn run(&mut self, buffer: impl std::io::Write) -> std::io::Result<()> {
+        let mut io = Io::new(self, self.window_size);
+        io.run(buffer)
     }
 
     pub fn action(&mut self, action: Action) {
@@ -164,7 +190,10 @@ impl Game {
     }
 
     fn reset(&mut self) {
-        *self = Game::new(self.mine_concentration, self.seed, self.window_size, self.light_mode);
+        *self = Game::new(
+            self.mine_concentration, self.seed,
+            self.window_size, self.light_mode,
+        );
     }
 
     fn resize(&mut self, new_size: SizeUsize) {

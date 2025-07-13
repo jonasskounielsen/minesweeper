@@ -1,10 +1,8 @@
 use crate::game::{Game, Action, Direction::*};
 use crate::helper::SizeUsize;
-use crate::io::input::Input;
 use std::{io, thread, sync::mpsc};
-use clap::Parser;
 use crossterm::event::KeyModifiers;
-use crossterm::terminal::{self, disable_raw_mode};
+use crossterm::terminal::disable_raw_mode;
 use crossterm::{
     event::{
         self,
@@ -29,36 +27,20 @@ use crossterm::{
     ExecutableCommand,
 };
 
-mod input;
-
 enum IoEvent {
     CrosstermEvent(crossterm::event::Event),
     Second,
 }
 
 #[derive(Debug)]
-pub struct Io {
-    game: Game,
+pub struct Io<'a> {
+    game: &'a mut Game,
     window_size: SizeUsize,
 }
 
-impl Io {
-    pub fn new() -> Io {
-        let input = Input::parse();
-        let window_size = terminal::window_size().expect("failed to get terminal size");
-        let window_size = SizeUsize {
-            width:  window_size.columns as usize,
-            height: window_size.rows    as usize,
-        };
-        Io {
-            game: Game::new(
-                input.mine_concentration,
-                input.seed,
-                window_size,
-                input.light_mode,
-            ),
-            window_size,
-        }
+impl<'a> Io<'a> {
+    pub fn new(game: &mut Game, window_size: SizeUsize) -> Io {
+        Io { game, window_size }
     }
 
     pub fn run(&mut self, mut buffer: impl io::Write) -> io::Result<()> {
