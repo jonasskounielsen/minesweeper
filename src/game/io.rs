@@ -1,5 +1,6 @@
 use crate::game::{Game, Action, Direction::*};
 use crate::helper::SizeUsize;
+use std::sync::mpsc::{Receiver, Sender};
 use std::{io, thread, sync::mpsc};
 use crossterm::event::KeyModifiers;
 use crossterm::terminal::disable_raw_mode;
@@ -27,33 +28,36 @@ use crossterm::{
     ExecutableCommand,
 };
 
-enum IoEvent {
+pub enum IoEvent {
     CrosstermEvent(crossterm::event::Event),
     Second,
+    Panic(&'static str),
 }
 
 #[derive(Debug)]
 pub struct Io<'a> {
     game: &'a mut Game,
     window_size: SizeUsize,
+    rx: Receiver<IoEvent>,
+    tx:   Sender<IoEvent>,
 }
 
 impl<'a> Io<'a> {
     pub fn new(game: &mut Game, window_size: SizeUsize) -> Io {
-        Io { game, window_size }
+        let (tx, rx) = mpsc::channel();
+        game.tx_panic = Some(tx.clone());
+        Io { game, window_size, rx, tx }
     }
 
     pub fn run(&mut self, mut buffer: impl io::Write) -> io::Result<()> {
-        let (tx, rx) = mpsc::channel();
-
-        let tx_key = tx.clone();
+        let tx_key = self.tx.clone();
         thread::spawn(move || -> io::Result<()> {
             loop {
                 tx_key.send(IoEvent::CrosstermEvent(read()?)).expect("failed to send io event to main thread");
             }
         });
 
-        let tx_time = tx;
+        let tx_time = self.tx.clone();
         thread::spawn(move || {
             loop {
                 thread::sleep(Game::time_until_timer_update());
@@ -76,30 +80,35 @@ impl<'a> Io<'a> {
             }
             
 
-            match rx.recv().expect("failed to receive Io event") {
+            match self.rx.recv().expect("failed to receive io event") {
                 IoEvent::CrosstermEvent(event) => {
                     match event {
-                    TerminalEvent::Key(KeyEvent {
-                        code: KeyCode::Char('c'), modifiers, ..
-                    }) if modifiers.contains(KeyModifiers::CONTROL) => {
-                        Self::quit(buffer)?;
-                        return Ok(());
-                    },
-                    TerminalEvent::Key(key_event) if !self.window_too_small() => {
-                        self.parse_key(key_event)
-                    },
-                    TerminalEvent::Resize(new_width, new_height) => {
-                        let new_size = SizeUsize {
-                            width:  new_width  as usize,
-                            height: new_height as usize,
-                        };
-                        self.window_size = new_size;
-                        self.game.action(Action::Resize(new_size));
-                    },
-                    _ => (),
-                }
+                        TerminalEvent::Key(KeyEvent {
+                            code: KeyCode::Char('c'), modifiers, ..
+                        }) if modifiers.contains(KeyModifiers::CONTROL) => {
+                            Self::quit(buffer)?;
+                            return Ok(());
+                        },
+                        TerminalEvent::Key(key_event) if !self.window_too_small() => {
+                            self.parse_key(key_event)
+                        },
+                        TerminalEvent::Resize(new_width, new_height) => {
+                            let new_size = SizeUsize {
+                                width:  new_width  as usize,
+                                height: new_height as usize,
+                            };
+                            self.window_size = new_size;
+                            self.game.action(Action::Resize(new_size));
+                        },
+                        _ => (),
+                    }
                 },
                 IoEvent::Second => (), // update display when timer increments
+                IoEvent::Panic(message) => {
+                    Self::quit(buffer)?;
+                    println!("{}", message);
+                    return Ok(());
+                },
             }
         }
     }

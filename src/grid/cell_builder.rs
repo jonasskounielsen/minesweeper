@@ -19,9 +19,14 @@ impl CellBuilder {
         },
     };
 
-    pub fn new(mine_concentration: f64, seed: Option<u64>) -> CellBuilder {
+    pub fn new(
+        mine_concentration: f64,
+        seed: Option<u64>,
+        send_panic: impl FnOnce(&'static str),
+    ) -> CellBuilder {
         let seed = seed.unwrap_or_else(|| Self::get_random_seed());
-        let origin = Self::first_valid_start(seed, mine_concentration);
+        let origin =
+            Self::first_valid_start(seed, mine_concentration, send_panic);
         CellBuilder {
             mine_concentration,
             seed,
@@ -30,15 +35,25 @@ impl CellBuilder {
     }
 
     pub fn cell(&self, place: PlaceI32) -> Cell {
-        let value = Self::cell_value_before_origin(self.seed, self.mine_concentration, PlaceI32 {
-            x: place.x + self.origin.x,
-            y: place.y + self.origin.y
-        });
+        let value =
+        Self::cell_value_before_origin(
+            self.seed,
+            self.mine_concentration,
+            PlaceI32 {
+                x: place.x + self.origin.x,
+                y: place.y + self.origin.y
+            },
+        );
         let cell = Cell::new(value);
+        // let mut cell = Cell::new(value); cell.reveal();
         cell
     }
 
-    fn cell_value_before_origin(seed_u64: u64, mine_concentration: f64, place: PlaceI32) -> CellValue {
+    fn cell_value_before_origin(
+        seed_u64: u64,
+        mine_concentration: f64,
+        place: PlaceI32,
+    ) -> CellValue {
         let mut seed = [42; 32];
         seed[ 0..8 ].copy_from_slice(&seed_u64.to_be_bytes());
         seed[ 8..12].copy_from_slice(&place.x .to_be_bytes());
@@ -53,7 +68,11 @@ impl CellBuilder {
         }
     }
 
-    fn first_valid_start(seed: u64, mine_concentration: f64) -> PlaceI32 {
+    fn first_valid_start(
+        seed: u64,
+        mine_concentration: f64,
+        send_panic: impl FnOnce(&'static str),
+    ) -> PlaceI32 {
         for x in -500..500 {
             for y in -500..500 {
                 let place = PlaceI32 { x, y };
@@ -62,7 +81,8 @@ impl CellBuilder {
                 }
             }
         }
-        panic!("cannot find valid start; mine concentration is too high");
+        send_panic("cannot find valid start; mine concentration is too high");
+        PlaceI32 { x: 0, y: 0 } // return dummy value
     }
 
     fn is_clear(seed: u64, mine_concentration: f64, place: PlaceI32) -> bool {
@@ -72,7 +92,8 @@ impl CellBuilder {
                     x: place.x + x,
                     y: place.y + y,
                 };
-                if let CellValue::Mine = Self::cell_value_before_origin(seed, mine_concentration, place) {
+                let cell_value = Self::cell_value_before_origin(seed, mine_concentration, place);
+                if let CellValue::Mine = cell_value {
                     return false;
                 }
             }

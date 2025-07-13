@@ -7,10 +7,11 @@ use crate::view::View;
 use crate::helper::{PlaceI32, SizeI32, SizeUsize};
 use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellState, CellValue};
+use std::sync::mpsc::Sender;
 use std::time::{self, Duration};
 use clap::Parser;
 use crossterm::terminal;
-use io::Io;
+use io::{Io, IoEvent};
 
 pub enum Action {
     MoveCursor(Direction),
@@ -56,6 +57,7 @@ pub struct Game {
     window_size: SizeUsize,
     light_mode: bool,
     max_cursor_displacement: SizeI32,
+    tx_panic: Option<Sender<IoEvent>>,
 }
 
 impl Game {
@@ -74,6 +76,7 @@ impl Game {
         let mut game = Self::new(
             input.mine_concentration, input.seed,
             window_size, input.light_mode,
+            None,
         );
         game.run(std::io::stdout())
     }
@@ -83,9 +86,17 @@ impl Game {
         seed: Option<u64>,
         window_size: SizeUsize,
         light_mode: bool,
+        tx_panic: Option<Sender<IoEvent>>,
     ) -> Game {
-        let max_cursor_displacement = Self::max_cursor_displacement(window_size);
-        let cell_builder = CellBuilder::new(mine_concentration, seed);
+        let max_cursor_displacement =
+            Self::max_cursor_displacement(window_size);
+        let cell_builder =
+            CellBuilder::new(
+                mine_concentration, seed,
+                |message: &'static str| {
+                    Self::send_panic(&tx_panic, message);
+                },
+            );
         let grid = Grid::new(cell_builder);
         let mut game = Game {
             state: GameState::Underway,
@@ -101,6 +112,7 @@ impl Game {
             window_size,
             light_mode,
             max_cursor_displacement,
+            tx_panic,
         };
         game.reveal(PlaceI32 { x: 0, y: 0 });
         game
@@ -109,6 +121,14 @@ impl Game {
     pub fn run(&mut self, buffer: impl std::io::Write) -> std::io::Result<()> {
         let mut io = Io::new(self, self.window_size);
         io.run(buffer)
+    }
+
+    pub fn send_panic(tx_panic: &Option<Sender<IoEvent>>, message: &'static str) {
+        if let Some(tx_panic) = tx_panic {
+            tx_panic.send(IoEvent::Panic(message)).expect("failed to send io event");
+        } else {
+            panic!("{}", message);
+        }
     }
 
     pub fn action(&mut self, action: Action) {
@@ -160,7 +180,8 @@ impl Game {
         revealed += 1;
         if revealed >= 10000 {
             // avoid stack overflow
-            panic!("too many adjacent clear cells; mine concentration is too low");
+            Self::send_panic(&self.tx_panic, "too many adjacent clear cells; mine concentration is too low");
+            return;
         }
         
         if let CellValue::Mine = self.grid.get(place).value {
@@ -204,6 +225,7 @@ impl Game {
         *self = Game::new(
             self.mine_concentration, self.seed,
             self.window_size, self.light_mode,
+            self.tx_panic.clone(),
         );
     }
 
