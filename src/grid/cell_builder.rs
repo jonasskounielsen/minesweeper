@@ -45,7 +45,7 @@ impl CellBuilder {
             },
         );
         let cell = Cell::new(value);
-        // let mut cell = Cell::new(value); cell.reveal();
+        let mut cell = Cell::new(value); cell.reveal();
         cell
     }
 

@@ -133,12 +133,13 @@ impl Game {
 
     pub fn action(&mut self, action: Action) {
         match (self.state, action) {
+            (_,                   Action::Resize(new_size)) => self.resize(new_size),
+            (_, _) if self.window_too_small(self.window_size) => (),
             (GameState::Underway, Action::Flag)           => self.toggle_flag(self.cursor),
             (GameState::Underway, Action::Reveal)         => self.reveal(self.cursor),
             (GameState::Underway, Action::RevealAdjacent) => self.reveal_adjacent(self.cursor),
             (_,                   Action::MoveCursor(direction)) => self.move_cursor(direction),
             (_,                   Action::Reset) => self.reset(),
-            (_,                   Action::Resize(new_size)) => self.resize(new_size),
             _ => (),
         }
     }
@@ -224,13 +225,15 @@ impl Game {
     fn reset(&mut self) {
         *self = Game::new(
             self.mine_concentration, self.seed,
-            self.window_size, self.light_mode,
+            self.window_size,        self.light_mode,
             self.tx_panic.clone(),
         );
     }
 
     fn resize(&mut self, new_size: SizeUsize) {
-        let new_max_cursor_displacement = Self::max_cursor_displacement(new_size);
+        self.window_size = new_size;
+        let new_max_cursor_displacement =
+            Self::max_cursor_displacement(new_size);
         self.max_cursor_displacement = new_max_cursor_displacement;
         self.tether_cursor();
     }
@@ -313,16 +316,18 @@ impl Game {
         second - remainder
     }
 
-    pub fn view(&self, size: SizeUsize) -> View {
+    pub fn view(&self) -> View {
+        let window_too_small = self.window_too_small(self.window_size);
         let show_mines = if let GameState::Lost = self.state { true } else { false };
         let latest_game_instant = self.end_instant.unwrap_or_else(|| time::Instant::now());
+        let game_cursor = self.cursor;
         View::new(
-            &self.grid,            size,
-            self.origin,           self.cursor,
-            show_mines,            self.revealed_cell_count,
-            self.start_instant,    latest_game_instant,
-            self.state, self.cell_builder.seed,
-            self.light_mode,
+            &self.grid,               self.window_size,
+            window_too_small,         self.origin,
+            game_cursor,              show_mines,
+            self.revealed_cell_count, self.start_instant,
+            latest_game_instant,      self.state,
+            self.cell_builder.seed,   self.light_mode,
         )
     }
 

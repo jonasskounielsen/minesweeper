@@ -15,8 +15,6 @@ use crossterm::{
     style::Print,
     terminal::{
         enable_raw_mode,
-        Clear,
-        ClearType::All,
         EnterAlternateScreen,
         LeaveAlternateScreen,
     },
@@ -69,17 +67,9 @@ impl<'a> Io<'a> {
         buffer.execute(Hide)?;
         enable_raw_mode()?;
         loop {
-            buffer.execute(Clear(All))?;
-
-            if self.window_too_small() {
-                buffer.execute(MoveTo(0, 0))?;
-                buffer.execute(Print("window is too small"))?;
-            } else {
-                let view = self.game.view(self.window_size);
-                view.render(&mut buffer)?;
-            }
-            
-
+            let view = self.game.view();
+            view.render(&mut buffer)?;
+            buffer.flush()?;
             match self.rx.recv().expect("failed to receive io event") {
                 IoEvent::CrosstermEvent(event) => {
                     match event {
@@ -89,7 +79,7 @@ impl<'a> Io<'a> {
                             Self::quit(buffer)?;
                             return Ok(());
                         },
-                        TerminalEvent::Key(key_event) if !self.window_too_small() => {
+                        TerminalEvent::Key(key_event) => {
                             self.parse_key(key_event)
                         },
                         TerminalEvent::Resize(new_width, new_height) => {
@@ -99,6 +89,7 @@ impl<'a> Io<'a> {
                             };
                             self.window_size = new_size;
                             self.game.action(Action::Resize(new_size));
+                            println!("{:?}",new_size);
                         },
                         _ => (),
                     }
@@ -139,10 +130,6 @@ impl<'a> Io<'a> {
             _ => return,
         };
         self.game.action(action);
-    }
-
-    fn window_too_small(&self) -> bool {
-        self.game.window_too_small(self.window_size)
     }
 }
 

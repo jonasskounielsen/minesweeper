@@ -1,6 +1,7 @@
 use std::{io, time};
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor};
+use crossterm::terminal::{Clear, ClearType};
 use crossterm::QueueableCommand;
 use crate::grid::cell::{Cell, CellState, CellValue};
 use crate::game::{Game, GameState, MineCount};
@@ -62,6 +63,7 @@ impl ViewCell {
 pub struct View {
     matrix: Matrix<ViewCell>,
     window_size: SizeUsize,
+    window_too_small: bool,
     matrix_cursor: PlaceUsize,
     game_cursor: PlaceI32,
     revealed_cell_count: u32,
@@ -76,12 +78,12 @@ impl View {
     const BACKGROUND_COLOR_LIGHT_MODE: Color = Color::Rgb { r: 0xbd, g: 0xbd, b: 0xbd };
 
     pub fn new(
-        grid: &Grid,                  window_size: SizeUsize,
-        origin: PlaceI32,             game_cursor: PlaceI32,
-        show_mines: bool,             revealed_cell_count: u32,
-        start_instant: time::Instant, latest_game_instant: time::Instant,
-        game_state: GameState,        seed: u64,
-        light_mode: bool,
+        grid: &Grid,                        window_size: SizeUsize,
+        window_too_small: bool,             origin: PlaceI32,
+        game_cursor: PlaceI32,              show_mines: bool,
+        revealed_cell_count: u32,           start_instant: time::Instant,
+        latest_game_instant: time::Instant, game_state: GameState,
+        seed: u64,                          light_mode: bool,
     ) -> View {
         let matrix_size = Self::matrix_size(window_size);
         let matrix = Matrix::new(
@@ -102,6 +104,7 @@ impl View {
         View {
             matrix,
             window_size,
+            window_too_small,
             matrix_cursor,
             game_cursor,
             revealed_cell_count,
@@ -156,6 +159,12 @@ impl View {
     const SPACE:                    &str = " ";
 
     pub fn render(&self, buffer: &mut impl io::Write) -> io::Result<()> {
+        if self.window_too_small {
+            buffer.queue(Clear(ClearType::All))?;
+            self.render_line(buffer, 0, "window is too small");
+            return Ok(());
+        }
+
         let line = if let GameState::Underway = self.game_state {
             format!(
                 "{:<pad_dist$}{}",
@@ -236,8 +245,6 @@ impl View {
         //     pad_dist = self.window_size.width - "0x0123456789ABCDEF".len(),
         // );
         // Self::render_line(buffer, self.matrix.size.height + 5, &line)?;
-
-        buffer.flush()?;
 
         Ok(())
     }
