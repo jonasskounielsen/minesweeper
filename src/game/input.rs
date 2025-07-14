@@ -6,24 +6,29 @@ use clap::Parser;
     version,
     about,
     long_about = r#"
-minesweeper on an infinite grid in the terminal
-keybinds:
-    arrow keys for movement
-    space to reveal
-    f to flag
-    a to reveal adjacent, non-flagged cells
-    r to restart"#,
+Minesweeper on an infinite grid in the terminal.
+Keybinds:
+    Arrow keys for movement
+    Space to reveal
+    F to flag
+    A to reveal adjacent, non-flagged cells
+    R to restart"#,
 )]
 pub struct Input {
-    /// fraction of cells that are mines
-    #[arg(name = "mine-concentration", short, long, default_value_t = Self::DEFAULT_MINE_CONCENTRATION)]
+    /// Fraction of cells that are mines [default: 0.2]
+    #[arg(
+        name = "mine-concentration",
+        short, long,
+        default_value_t = Self::DEFAULT_MINE_CONCENTRATION,
+        hide_default_value = true,
+    )]
     pub mine_concentration: f64,
     
-    /// seed for the world generator (defaults to random)
+    /// Seed for the world generator [default: random]
     #[arg(short, long, hide_default_value = true)]
     pub seed: Option<u64>,
 
-    /// use gray background
+    /// Use gray background
     #[arg(name = "light-mode", short, long, default_value_t = false)]
     pub light_mode: bool,
 }
