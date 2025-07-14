@@ -12,14 +12,12 @@ use crossterm::{
         KeyCode,
         Event as TerminalEvent,
     },
-    style::Print,
     terminal::{
         enable_raw_mode,
         EnterAlternateScreen,
         LeaveAlternateScreen,
     },
     cursor::{
-        MoveTo,
         Show,
         Hide,
     },
@@ -97,7 +95,7 @@ impl<'a> Io<'a> {
                 IoEvent::Second => (), // update display when timer increments
                 IoEvent::Panic(message) => {
                     Self::quit(buffer)?;
-                    println!("{}", message);
+                    eprintln!("{}", message);
                     return Ok(());
                 },
             }
