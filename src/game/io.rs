@@ -120,9 +120,18 @@ impl<'a> Io<'a> {
             KeyCode::Down      => Action::MoveCursor(Down),
             KeyCode::Up        => Action::MoveCursor(Up),
 
-            KeyCode::Char(' ') => Action::Reveal,
-            KeyCode::Char('a') => Action::RevealAdjacent,
+            KeyCode::Char('a') => Action::MoveCursor(Left),
+            KeyCode::Char('d') => Action::MoveCursor(Right),
+            KeyCode::Char('s') => Action::MoveCursor(Down),
+            KeyCode::Char('w') => Action::MoveCursor(Up),
+
+            KeyCode::Char('z') => Action::RevealAdjacent,
             KeyCode::Char('f') => Action::Flag,
+
+            KeyCode::Char('h') => Action::RevealAdjacent,
+            KeyCode::Char('l') => Action::Flag,
+
+            KeyCode::Char(' ') => Action::Reveal,
 
             KeyCode::Char('r') => Action::Reset,
             _ => return,
