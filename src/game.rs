@@ -22,7 +22,7 @@ pub enum Action {
     Resize(SizeUsize),
 }
 
-pub enum  Direction {
+pub enum Direction {
     Left,
     Right,
     Down,
@@ -32,7 +32,7 @@ pub enum  Direction {
 #[derive(Debug)]
 pub enum MineCount {
     Zero,
-    One, Two, Three, Four,
+    One,  Two, Three, Four,
     Five, Six, Seven, Eight,
 }
 
@@ -44,20 +44,20 @@ pub enum GameState {
 
 #[derive(Debug)]
 pub struct Game {
-    state: GameState,
-    grid: Grid,
-    cursor: PlaceI32,
-    origin: PlaceI32,
-    revealed_cell_count: u32,
-    start_instant: time::Instant,
-    end_instant: Option<time::Instant>,
-    mine_concentration: f64,
-    cell_builder: CellBuilder,
-    seed: Option<u64>,
-    window_size: SizeUsize,
-    light_mode: bool,
+    state:                   GameState,
+    grid:                    Grid,
+    cursor:                  PlaceI32,
+    origin:                  PlaceI32,
+    revealed_cell_count:     u32,
+    start_instant:           time::Instant,
+    end_instant:             Option<time::Instant>,
+    mine_concentration:      f64,
+    cell_builder:            CellBuilder,
+    seed:                    Option<u64>,
+    window_size:             SizeUsize,
+    light_mode:              bool,
     max_cursor_displacement: SizeI32,
-    tx_panic: Option<Sender<IoEvent>>,
+    tx_panic:                Option<Sender<IoEvent>>,
 }
 
 impl Game {
@@ -75,7 +75,7 @@ impl Game {
         };
         let mut game = Self::new(
             input.mine_concentration, input.seed,
-            window_size, input.light_mode,
+            window_size,              input.light_mode,
             None,
         );
         game.run(std::io::stdout())
@@ -83,29 +83,27 @@ impl Game {
 
     pub fn new(
         mine_concentration: f64,
-        seed: Option<u64>,
-        window_size: SizeUsize,
-        light_mode: bool,
-        tx_panic: Option<Sender<IoEvent>>,
+        seed:               Option<u64>,
+        window_size:        SizeUsize,
+        light_mode:         bool,
+        tx_panic:           Option<Sender<IoEvent>>,
     ) -> Game {
-        let max_cursor_displacement =
-            Self::max_cursor_displacement(window_size);
-        let cell_builder =
-            CellBuilder::new(
-                mine_concentration, seed,
-                |message: &'static str| {
-                    Self::send_panic(&tx_panic, message);
-                },
-            );
+        let max_cursor_displacement = Self::max_cursor_displacement(window_size);
+        let cell_builder = CellBuilder::new(
+            mine_concentration, seed,
+            |message: &'static str| {
+                Self::send_panic(&tx_panic, message);
+            },
+        );
         let grid = Grid::new(cell_builder);
         let mut game = Game {
-            state: GameState::Underway,
+            state:               GameState::Underway,
             grid,
-            cursor: PlaceI32 { x: 0, y: 0 },
-            origin: PlaceI32 { x: 0, y: 0 },
+            cursor:              PlaceI32 { x: 0, y: 0 },
+            origin:              PlaceI32 { x: 0, y: 0 },
             revealed_cell_count: 0,
-            start_instant: time::Instant::now(),
-            end_instant: None,
+            start_instant:       time::Instant::now(),
+            end_instant:         None,
             mine_concentration,
             cell_builder,
             seed,

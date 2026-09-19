@@ -39,7 +39,7 @@ pub struct Io<'a> {
 }
 
 impl<'a> Io<'a> {
-    pub fn new(game: &mut Game, window_size: SizeUsize) -> Io {
+    pub fn new(game: &mut Game, window_size: SizeUsize) -> Io<'_> {
         let (tx, rx) = mpsc::channel();
         game.tx_panic = Some(tx.clone());
         Io { game, window_size, rx, tx }
@@ -68,41 +68,51 @@ impl<'a> Io<'a> {
             let view = self.game.view();
             view.render(&mut buffer)?;
             buffer.flush()?;
-            match self.rx.recv().expect("failed to receive io event") {
-                IoEvent::CrosstermEvent(event) => {
-                    match event {
-                        TerminalEvent::Key(KeyEvent {
-                            code: KeyCode::Char('c'), modifiers, ..
-                        }) if modifiers.contains(KeyModifiers::CONTROL) => {
-                            Self::quit(buffer)?;
-                            return Ok(());
-                        },
-                        TerminalEvent::Key(key_event) => {
-                            self.parse_key(key_event)
-                        },
-                        TerminalEvent::Resize(new_width, new_height) => {
-                            let new_size = SizeUsize {
-                                width:  new_width  as usize,
-                                height: new_height as usize,
-                            };
-                            self.window_size = new_size;
-                            self.game.action(Action::Resize(new_size));
-                            buffer.execute(Clear(ClearType::All))?;
-                        },
-                        _ => (),
-                    }
-                },
-                IoEvent::Second => (), // update display when timer increments
-                IoEvent::Panic(message) => {
-                    Self::quit(buffer)?;
-                    eprintln!("{}", message);
-                    return Ok(());
-                },
-            }
+            self.handle_event(&mut buffer, self.rx.recv().expect("failed to receive io event"))?;
         }
     }
 
-    fn quit(mut buffer: impl io::Write) -> io::Result<()> {
+    fn handle_event(&mut self, buffer: &mut impl std::io::Write, event: IoEvent) -> io::Result<()> {
+        match event {
+            IoEvent::CrosstermEvent(event) => {
+                match event {
+                    TerminalEvent::Key(KeyEvent {
+                        code: KeyCode::Char('c'), modifiers, ..
+                    }) if modifiers.contains(KeyModifiers::CONTROL) => {
+                        Self::quit(buffer)?;
+                        return Ok(());
+                    },
+                    TerminalEvent::Key(key_event) => {
+                        self.parse_key(key_event)
+                    },
+                    TerminalEvent::Resize(new_width, new_height) => {
+                        self.resize(buffer, new_width, new_height)?
+                    },
+                    _ => (),
+                }
+            },
+            IoEvent::Second => (), // update display when timer increments
+            IoEvent::Panic(message) => {
+                Self::quit(buffer)?;
+                eprintln!("{}", message);
+                return Ok(());
+            },
+        }
+        Ok(())
+    }
+
+    fn resize(&mut self, buffer: &mut impl io::Write, new_width: u16, new_height: u16) -> io::Result<()> {
+        let new_size = SizeUsize {
+            width:  new_width  as usize,
+            height: new_height as usize,
+        };
+        self.window_size = new_size;
+        self.game.action(Action::Resize(new_size));
+        buffer.execute(Clear(ClearType::All))?;
+        Ok(())
+    }
+
+    fn quit(buffer: &mut impl io::Write) -> io::Result<()> {
         buffer.execute(LeaveAlternateScreen)?;
         disable_raw_mode()?;
         buffer.execute(Show)?;
