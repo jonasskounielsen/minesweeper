@@ -13,6 +13,23 @@ use clap::Parser;
 use crossterm::terminal;
 use io::{Io, IoEvent};
 
+pub fn start() -> std::io::Result<()> {
+    let input = Input::parse();
+    let window_size = terminal::window_size().expect("failed to get terminal size");
+    let window_size: SizeUsize = SizeUsize {
+        width:  window_size.columns as usize,
+        height: window_size.rows    as usize,
+    };
+    let mut game = Game::new(
+        input.mine_concentration, input.seed,
+        window_size,              input.light_mode,
+        None,
+    );
+    let mut io = Io::new(&mut game, window_size);
+    let buffer = std::io::stdout();
+    io.run(buffer)
+}
+
 pub enum Action {
     MoveCursor(Direction),
     Reveal,
@@ -66,21 +83,6 @@ impl Game {
         height: 3,
     };
 
-    pub fn start() -> std::io::Result<()> {
-        let input = Input::parse();
-        let window_size = terminal::window_size().expect("failed to get terminal size");
-        let window_size: SizeUsize = SizeUsize {
-            width:  window_size.columns as usize,
-            height: window_size.rows    as usize,
-        };
-        let mut game = Self::new(
-            input.mine_concentration, input.seed,
-            window_size,              input.light_mode,
-            None,
-        );
-        game.run(std::io::stdout())
-    }
-
     pub fn new(
         mine_concentration: f64,
         seed:               Option<u64>,
@@ -116,11 +118,6 @@ impl Game {
         game
     }
 
-    pub fn run(&mut self, buffer: impl std::io::Write) -> std::io::Result<()> {
-        let mut io = Io::new(self, self.window_size);
-        io.run(buffer)
-    }
-
     pub fn send_panic(tx_panic: &Option<Sender<IoEvent>>, message: &'static str) {
         if let Some(tx_panic) = tx_panic {
             tx_panic.send(IoEvent::Panic(message)).expect("failed to send io event");
@@ -131,13 +128,13 @@ impl Game {
 
     pub fn action(&mut self, action: Action) {
         match (self.state, action) {
-            (_,                   Action::Resize(new_size)) => self.resize(new_size),
+            (_,                   Action::Resize(new_size))      => self.resize(new_size),
             (_, _) if self.window_too_small(self.window_size) => (),
-            (GameState::Underway, Action::Flag)           => self.toggle_flag(self.cursor),
-            (GameState::Underway, Action::Reveal)         => self.reveal(self.cursor),
-            (GameState::Underway, Action::RevealAdjacent) => self.reveal_adjacent(self.cursor),
+            (GameState::Underway, Action::Flag)                             => self.toggle_flag(self.cursor),
+            (GameState::Underway, Action::Reveal)                           => self.reveal(self.cursor),
+            (GameState::Underway, Action::RevealAdjacent)                   => self.reveal_adjacent(self.cursor),
             (_,                   Action::MoveCursor(direction)) => self.move_cursor(direction),
-            (_,                   Action::Reset) => self.reset(),
+            (_,                   Action::Reset)                            => self.reset(),
             _ => (),
         }
     }
