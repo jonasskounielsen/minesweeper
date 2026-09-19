@@ -1,9 +1,9 @@
-use clap::Parser;
+use clap::{Parser, crate_version};
 
-/// minesweeper on an infinite grid in the terminal
+/// Minesweeper on an infinite grid in the terminal.
 #[derive(Parser, Debug)]
 #[command(
-    version,
+    version(crate_version!()),
     about,
     long_about = r#"
 Minesweeper on an infinite grid in the terminal.
@@ -25,7 +25,11 @@ pub struct Input {
     pub mine_concentration: f64,
     
     /// Seed for the world generator [default: random]
-    #[arg(short, long, hide_default_value = true)]
+    #[arg(
+        name = "seed",
+        short, long,
+        hide_default_value = true,
+    )]
     pub seed: Option<u64>,
 
     /// Use gray background
