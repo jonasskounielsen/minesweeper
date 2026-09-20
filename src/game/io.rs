@@ -70,19 +70,29 @@ impl<'a> Io<'a> {
             let view = self.game.view();
             view.render(&mut buffer)?;
             buffer.flush()?;
-            self.handle_event(&mut buffer, self.rx.recv().expect("failed to receive io event"))?;
+            let quit = self.handle_event(&mut buffer, self.rx.recv().expect("failed to receive io event"))?;
+            if quit {
+                Self::quit(buffer)?;
+                return Ok(());
+            }
         }
     }
 
-    fn handle_event(&mut self, buffer: &mut impl std::io::Write, event: IoEvent) -> io::Result<()> {
+    fn quit(mut buffer: impl io::Write) -> io::Result<()> {
+        buffer.execute(LeaveAlternateScreen)?;
+        disable_raw_mode()?;
+        buffer.execute(Show)?;
+        Ok(())
+    }
+
+    fn handle_event(&mut self, buffer: &mut impl std::io::Write, event: IoEvent) -> io::Result<bool> {
         match event {
             IoEvent::CrosstermEvent(event) => {
                 match event {
                     TerminalEvent::Key(KeyEvent {
                         code: KeyCode::Char('c'), modifiers, ..
                     }) if modifiers.contains(KeyModifiers::CONTROL) => {
-                        Self::quit(buffer)?;
-                        return Ok(());
+                        return Ok(true);
                     },
                     TerminalEvent::Key(key_event) => {
                         self.parse_key(key_event)
@@ -97,10 +107,10 @@ impl<'a> Io<'a> {
             IoEvent::Panic(message) => {
                 Self::quit(buffer)?;
                 eprintln!("{}", message);
-                return Ok(());
+                return Ok(false);
             },
         }
-        Ok(())
+        Ok(false)
     }
 
     fn resize(&mut self, buffer: &mut impl io::Write, new_width: u16, new_height: u16) -> io::Result<()> {
@@ -111,13 +121,6 @@ impl<'a> Io<'a> {
         self.window_size = new_size;
         self.game.action(Action::Resize(new_size));
         buffer.execute(Clear(ClearType::All))?;
-        Ok(())
-    }
-
-    fn quit(buffer: &mut impl io::Write) -> io::Result<()> {
-        buffer.execute(LeaveAlternateScreen)?;
-        disable_raw_mode()?;
-        buffer.execute(Show)?;
         Ok(())
     }
 
