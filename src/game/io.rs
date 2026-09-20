@@ -1,3 +1,4 @@
+use crate::game::input::Keybinds;
 use crate::game::{Game, Action, Direction::*};
 use crate::helper::SizeUsize;
 use std::sync::mpsc::{Receiver, Sender};
@@ -32,17 +33,18 @@ pub enum IoEvent {
 
 #[derive(Debug)]
 pub struct Io<'a> {
-    game: &'a mut Game,
+    game:        &'a mut Game,
     window_size: SizeUsize,
-    rx: Receiver<IoEvent>,
-    tx:   Sender<IoEvent>,
+    keybinds:    Keybinds,
+    rx:          Receiver<IoEvent>,
+    tx:          Sender<IoEvent>,
 }
 
 impl<'a> Io<'a> {
-    pub fn new(game: &mut Game, window_size: SizeUsize) -> Io<'_> {
+    pub fn new(game: &mut Game, window_size: SizeUsize, keybinds: Keybinds) -> Io<'_> {
         let (tx, rx) = mpsc::channel();
         game.tx_panic = Some(tx.clone());
-        Io { game, window_size, rx, tx }
+        Io { game, window_size, keybinds, rx, tx }
     }
 
     pub fn run(&mut self, mut buffer: impl io::Write) -> io::Result<()> {
@@ -124,29 +126,67 @@ impl<'a> Io<'a> {
            key.kind != event::KeyEventKind::Press {
             return;
         }
-        let action = match key.code {
-            KeyCode::Left      => Action::MoveCursor(Left),
-            KeyCode::Right     => Action::MoveCursor(Right),
-            KeyCode::Down      => Action::MoveCursor(Down),
-            KeyCode::Up        => Action::MoveCursor(Up),
+        if let Some(action) = self.keybinds.action(key.code) {
+            self.game.action(action);
+        }
+    }
+}
 
-            KeyCode::Char('a') => Action::MoveCursor(Left),
-            KeyCode::Char('d') => Action::MoveCursor(Right),
-            KeyCode::Char('s') => Action::MoveCursor(Down),
-            KeyCode::Char('w') => Action::MoveCursor(Up),
+impl Keybinds {
+    pub fn action(&self, key_code: KeyCode) -> Option<Action> {
+        match self {
+            Self::Vim    => self.action_vim   (key_code),
+            Self::Wasd   => self.action_wasd  (key_code),
+            Self::Arrows => self.action_arrows(key_code),
+        }
+    }
 
-            KeyCode::Char('z') => Action::RevealAdjacent,
-            KeyCode::Char('f') => Action::Flag,
+    fn action_vim(&self, key_code: KeyCode) -> Option<Action> {
+        match key_code {
+            KeyCode::Char('h') => Some(Action::MoveCursor(Left)),
+            KeyCode::Char('j') => Some(Action::MoveCursor(Down)),
+            KeyCode::Char('k') => Some(Action::MoveCursor(Up)),
+            KeyCode::Char('l') => Some(Action::MoveCursor(Right)),
 
-            KeyCode::Char('h') => Action::RevealAdjacent,
-            KeyCode::Char('l') => Action::Flag,
+            KeyCode::Char(' ') => Some(Action::Reveal),
+            KeyCode::Char('d') => Some(Action::RevealAdjacent),
+            KeyCode::Char('f') => Some(Action::Flag),
 
-            KeyCode::Char(' ') => Action::Reveal,
+            KeyCode::Char('r') => Some(Action::Reset),
+            _ => None,
+        }
+    }
 
-            KeyCode::Char('r') => Action::Reset,
-            _ => return,
-        };
-        self.game.action(action);
+    fn action_wasd(&self, key_code: KeyCode) -> Option<Action> {
+        match key_code {
+            KeyCode::Char('w') => Some(Action::MoveCursor(Up)),
+            KeyCode::Char('a') => Some(Action::MoveCursor(Left)),
+            KeyCode::Char('s') => Some(Action::MoveCursor(Down)),
+            KeyCode::Char('d') => Some(Action::MoveCursor(Right)),
+
+            KeyCode::Char(' ') => Some(Action::Reveal),
+            KeyCode::Char('j') => Some(Action::RevealAdjacent),
+            KeyCode::Char('k') => Some(Action::Flag),
+
+            KeyCode::Char('r') => Some(Action::Reset),
+            _ => None,
+        }
+    }
+
+    fn action_arrows(&self, key_code: KeyCode) -> Option<Action> {
+        match key_code {
+            KeyCode::Left      => Some(Action::MoveCursor(Left)),
+            KeyCode::Right     => Some(Action::MoveCursor(Right)),
+            KeyCode::Down      => Some(Action::MoveCursor(Down)),
+            KeyCode::Up        => Some(Action::MoveCursor(Up)),
+
+            KeyCode::Char(' ') => Some(Action::Reveal),
+            KeyCode::Char('d') => Some(Action::RevealAdjacent),
+            KeyCode::Char('f') => Some(Action::Flag),
+
+            KeyCode::Char('r') => Some(Action::Reset),
+            _ => None,
+        }
     }
 }
 

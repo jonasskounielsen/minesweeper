@@ -1,5 +1,7 @@
 use std::ops::Deref;
 
+use crossterm::terminal::WindowSize;
+
 #[derive(Clone, Copy, Debug)]
 pub struct PlaceI32 {
     pub x: i32,
@@ -50,6 +52,15 @@ impl Into<SizeI32> for SizeUsize {
         SizeI32 {
             width:  self.width  as i32,
             height: self.height as i32,
+        }
+    }
+}
+
+impl From<WindowSize> for SizeUsize {
+    fn from(window_size: WindowSize) -> Self {
+        SizeUsize {
+            width:  window_size.columns as usize,
+            height: window_size.rows    as usize,
         }
     }
 }

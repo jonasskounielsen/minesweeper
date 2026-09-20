@@ -9,23 +9,27 @@ use crate::grid::Grid;
 use crate::grid::cell::{Cell, CellState, CellValue};
 use std::sync::mpsc::Sender;
 use std::time::{self, Duration};
-use clap::Parser;
+use clap::{Parser, crate_version};
 use crossterm::terminal;
 use io::{Io, IoEvent};
 
 pub fn start() -> std::io::Result<()> {
     let input = Input::parse();
-    let window_size = terminal::window_size().expect("failed to get terminal size");
-    let window_size: SizeUsize = SizeUsize {
-        width:  window_size.columns as usize,
-        height: window_size.rows    as usize,
-    };
+
+    if input.print_version {
+        println!("minesweeper {}", crate_version!());
+        return Ok(());
+    }
+
+    let window_size = SizeUsize::from(terminal::window_size().expect("failed to get terminal size"));
+
     let mut game = Game::new(
         input.mine_concentration, input.seed,
         window_size,              input.light_mode,
         None,
     );
-    let mut io = Io::new(&mut game, window_size);
+
+    let mut io = Io::new(&mut game, window_size, input.keybinds);
     let buffer = std::io::stdout();
     io.run(buffer)
 }
