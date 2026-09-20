@@ -229,10 +229,11 @@ impl View {
         self.render_line(buffer, self.matrix.size.height + 3, &line)?;
 
         let line = format!(
-            "{:>pad_dist$},{:<pad_dist$}",
+            "{:>pad_dist_left$},{:<pad_dist_right$}",
             format!("({}", self.game_cursor.x),
             format!("{})", self.game_cursor.y),
-            pad_dist = self.window_size.width / 2 - 1,
+            pad_dist_left  = (self.window_size.width - 1) / 2,
+            pad_dist_right =  self.window_size.width      / 2,
         );
         self.render_line(buffer, self.matrix.size.height + 4, &line)?;
 
